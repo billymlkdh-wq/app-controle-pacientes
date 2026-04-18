@@ -1,0 +1,7 @@
+project_id = "pacientes-app"
+
+[functions.send-whatsapp]
+verify_jwt = false
+
+[functions.notify-cron]
+verify_jwt = false
