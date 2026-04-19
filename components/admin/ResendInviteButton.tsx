@@ -16,7 +16,8 @@ export function ResendInviteButton({ patientId, disabled }: { patientId: string;
       if (!res.ok) {
         toast.error(data.error ?? 'Falha ao reenviar convite')
       } else {
-        toast.success(`Convite reenviado para ${data.email}`)
+        const label = data.mode === 'recovery' ? 'Link de redefinição enviado' : 'Convite enviado'
+        toast.success(`${label} para ${data.email}`)
       }
     } finally {
       setLoading(false)
