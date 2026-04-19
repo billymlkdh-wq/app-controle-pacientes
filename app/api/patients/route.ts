@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
         health_history: body.health_history ?? null,
         plan_type: body.plan_type ?? 'avulso',
         plan_value: body.plan_value ?? null,
+        questionnaire_start_date: body.questionnaire_start_date ?? null,
       })
       .select()
       .single()

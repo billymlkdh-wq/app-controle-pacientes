@@ -26,7 +26,13 @@ export async function POST(request: NextRequest) {
   const body = await request.json() as {
     patient_id: string
     schedule_id?: string
-    responses: Array<{ question_id: string; response_text?: string | null; response_number?: number | null }>
+    responses: Array<{
+      question_id: string
+      response_text?: string | null
+      response_number?: number | null
+      response_options?: string[] | null
+      media_urls?: string[]
+    }>
   }
   if (!body.patient_id || !Array.isArray(body.responses)) {
     return NextResponse.json({ error: 'Payload inválido' }, { status: 400 })
@@ -38,6 +44,8 @@ export async function POST(request: NextRequest) {
     schedule_id: body.schedule_id ?? null,
     response_text: r.response_text ?? null,
     response_number: r.response_number ?? null,
+    response_options: r.response_options ?? null,
+    media_urls: r.media_urls ?? [],
   }))
 
   const { error: insertErr } = await supabase.from('questionnaire_responses').insert(rows)

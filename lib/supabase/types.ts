@@ -18,8 +18,9 @@ export type Database = {
           sex: 'M' | 'F' | 'outro' | null
           objective: string | null
           health_history: string | null
-          plan_type: 'avulso' | 'mensal'
+          plan_type: 'avulso' | 'mensal' | 'trimestral' | 'semestral' | 'anual'
           plan_value: number | null
+          questionnaire_start_date: string | null
           active: boolean
           created_at: string
           updated_at: string
@@ -75,9 +76,10 @@ export type Database = {
           id: string
           order_num: number
           question_text: string
-          question_type: 'text' | 'number' | 'scale' | 'choice'
+          question_type: 'text' | 'number' | 'scale' | 'choice' | 'multiple_choice'
           options: Json | null
           is_numeric_chart: boolean
+          allow_media: boolean
           active: boolean
           created_at: string
         }
@@ -92,6 +94,8 @@ export type Database = {
           schedule_id: string | null
           response_text: string | null
           response_number: number | null
+          response_options: Json | null
+          media_urls: Json
           created_at: string
         }
         Insert: Partial<Database['public']['Tables']['questionnaire_responses']['Row']> & { patient_id: string; question_id: string }

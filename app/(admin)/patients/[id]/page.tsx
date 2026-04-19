@@ -43,6 +43,7 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
             <div>Nascimento: {formatDateBR(p.birth_date)}</div>
             <div>Sexo: {p.sex ?? '-'}</div>
             <div>Plano: {p.plan_type} {p.plan_value ? `· ${formatBRL(Number(p.plan_value))}` : ''}</div>
+            <div>Início do ciclo quinzenal: {formatDateBR(p.questionnaire_start_date) || '-'}</div>
           </CardContent></Card>
         <Card><CardHeader><CardTitle>Objetivo & histórico</CardTitle></CardHeader>
           <CardContent className="text-sm space-y-2">

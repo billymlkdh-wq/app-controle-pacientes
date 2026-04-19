@@ -28,6 +28,7 @@ export default function NewPatientPage() {
       health_history: form.get('health_history') || null,
       plan_type: form.get('plan_type') || 'avulso',
       plan_value: form.get('plan_value') ? Number(form.get('plan_value')) : null,
+      questionnaire_start_date: form.get('questionnaire_start_date') || null,
     }
     const res = await fetch('/api/patients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     setLoading(false)
@@ -56,10 +57,19 @@ export default function NewPatientPage() {
               </div>
               <div><Label htmlFor="plan_type">Plano</Label>
                 <select id="plan_type" name="plan_type" className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm" disabled={loading}>
-                  <option value="avulso">Avulso</option><option value="mensal">Mensal</option>
+                  <option value="avulso">Avulso</option>
+                  <option value="mensal">Mensal</option>
+                  <option value="trimestral">Trimestral</option>
+                  <option value="semestral">Semestral</option>
+                  <option value="anual">Anual</option>
                 </select>
               </div>
               <div><Label htmlFor="plan_value">Valor do plano (R$)</Label><Input id="plan_value" name="plan_value" type="number" step="0.01" disabled={loading} /></div>
+              <div>
+                <Label htmlFor="questionnaire_start_date">Início do ciclo de questionários</Label>
+                <Input id="questionnaire_start_date" name="questionnaire_start_date" type="date" disabled={loading} />
+                <p className="mt-1 text-xs text-muted-foreground">1ª resposta vence 15 dias depois dessa data.</p>
+              </div>
             </div>
             <div><Label htmlFor="objective">Objetivo</Label><Textarea id="objective" name="objective" disabled={loading} /></div>
             <div><Label htmlFor="health_history">Histórico de saúde</Label><Textarea id="health_history" name="health_history" disabled={loading} /></div>
