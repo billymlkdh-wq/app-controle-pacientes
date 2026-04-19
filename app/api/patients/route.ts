@@ -51,8 +51,10 @@ export async function POST(request: NextRequest) {
     if (body.email) {
       try {
         const admin = createAdminClient()
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin
         await admin.auth.admin.inviteUserByEmail(body.email, {
           data: { role: 'patient', patient_id: patient.id },
+          redirectTo: `${siteUrl}/auth/callback?next=/auth/set-password`,
         })
       } catch (inviteErr) {
         // Não falha a criação do paciente — log apenas
