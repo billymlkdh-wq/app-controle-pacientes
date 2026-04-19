@@ -11,7 +11,7 @@ export default async function DashboardPage() {
     supabase.from('questionnaire_schedule').select('id', { count: 'exact', head: true }).eq('status', 'overdue'),
     supabase.from('payments').select('id', { count: 'exact', head: true }).eq('status', 'atrasado'),
   ])
-  const revenue = (paymentsMonth.data ?? []).reduce((s, p) => s + Number(p.amount ?? 0), 0)
+  const revenue = ((paymentsMonth.data ?? []) as Array<{ amount: number | string | null }>).reduce((s, p) => s + Number(p.amount ?? 0), 0)
 
   return (
     <div className="space-y-6">
