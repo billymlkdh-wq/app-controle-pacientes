@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatBRL, formatDateBR } from '@/lib/utils'
 import { QuestionnaireEvolutionChart } from '@/components/admin/QuestionnaireEvolutionChart'
+import { ResendInviteButton } from '@/components/admin/ResendInviteButton'
 
 export default async function PatientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -29,10 +30,13 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
         <Badge variant={p.active ? 'success' : 'secondary'}>{p.active ? 'Ativo' : 'Inativo'}</Badge>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 items-center">
         <Link href={`/patients/${id}/progress`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Evolução</Link>
         <Link href={`/patients/${id}/appointments`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Consultas</Link>
         <Link href={`/patients/${id}/financial`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Financeiro</Link>
+        <div className="ml-auto">
+          <ResendInviteButton patientId={id} disabled={!p.email} />
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
