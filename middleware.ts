@@ -3,7 +3,11 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
 const ADMIN_PREFIXES = ['/admin', '/dashboard', '/patients', '/financial', '/questionnaires']
-const PATIENT_PREFIXES = ['/portal', '/questionnaire', '/progress']
+// NB: precisa ser prefixo exato ou com "/" para não casar com /questionnaires (admin)
+const PATIENT_EXACT = ['/portal', '/questionnaire', '/progress']
+const PATIENT_PREFIXES_WITH_SLASH = ['/portal/', '/questionnaire/', '/progress/']
+const isPatientPath = (p: string) =>
+  PATIENT_EXACT.includes(p) || PATIENT_PREFIXES_WITH_SLASH.some((x) => p.startsWith(x))
 const PUBLIC_PREFIXES = ['/auth', '/api/webhooks/whatsapp']
 
 export async function middleware(request: NextRequest) {
@@ -26,7 +30,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/portal', request.url))
   }
 
-  if (PATIENT_PREFIXES.some((p) => pathname.startsWith(p)) && role === 'admin') {
+  if (isPatientPath(pathname) && role === 'admin') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
