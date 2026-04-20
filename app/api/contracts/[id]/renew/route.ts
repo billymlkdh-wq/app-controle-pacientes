@@ -52,9 +52,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const plan_type = body.plan_type ?? (prev.plan_type as PlanType)
   const total_value = body.total_value ?? Number(prev.total_value)
   const start_date = body.start_date ?? addDays(prev.end_date, 1)
-  const count = body.installments_count ?? INSTALLMENTS_BY_PLAN[plan_type]
+  const paymentMethod = (prev.payment_method as 'avista' | 'pix_parcelado' | 'credito_parcelado' | null) ?? 'pix_parcelado'
+  const count = paymentMethod === 'avista' ? 1 : (body.installments_count ?? INSTALLMENTS_BY_PLAN[plan_type])
   const end_date = count === 1 ? start_date : addMonths(start_date, count - 1)
   const per = Math.round((total_value / count) * 100) / 100
+  const installmentMethod: 'pix' | 'cartao' = paymentMethod === 'credito_parcelado' ? 'cartao' : 'pix'
 
   const { data: contract, error: cErr } = await ctx.supabase.from('plan_contracts').insert({
     patient_id: prev.patient_id,
@@ -63,6 +65,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     installments_count: count,
     start_date,
     end_date,
+    payment_method: paymentMethod,
     notes: body.notes ?? null,
     renewed_from_id: prev.id,
   }).select().single()
@@ -77,6 +80,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       installment_num: i + 1,
       due_date: addMonths(start_date, i),
       amount,
+      method: installmentMethod,
       status: 'pendente' as const,
       date: null,
     }

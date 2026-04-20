@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatBRL, formatDateBR } from '@/lib/utils'
 import { QuestionnaireEvolutionChart } from '@/components/admin/QuestionnaireEvolutionChart'
 import { AccessLinkPanel } from '@/components/admin/AccessLinkPanel'
+import { UnlockQuestionnaireButton } from '@/components/admin/UnlockQuestionnaireButton'
 
 export default async function PatientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -34,6 +35,7 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
         <Link href={`/patients/${id}/progress`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Evolução</Link>
         <Link href={`/patients/${id}/appointments`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Consultas</Link>
         <Link href={`/patients/${id}/financial`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Financeiro</Link>
+        <UnlockQuestionnaireButton patientId={id} />
       </div>
 
       <AccessLinkPanel patientId={id} hasEmail={!!p.email} />

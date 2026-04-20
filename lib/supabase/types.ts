@@ -83,6 +83,7 @@ export type Database = {
           start_date: string
           end_date: string
           status: 'ativo' | 'encerrado' | 'cancelado'
+          payment_method: 'avista' | 'pix_parcelado' | 'credito_parcelado' | null
           notes: string | null
           renewed_from_id: string | null
           created_at: string

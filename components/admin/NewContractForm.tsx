@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 
 type PlanType = 'avulso' | 'mensal' | 'trimestral' | 'semestral' | 'anual'
+type PaymentMethod = 'avista' | 'pix_parcelado' | 'credito_parcelado'
 const INSTALLMENTS: Record<PlanType, number> = { avulso: 1, mensal: 1, trimestral: 3, semestral: 6, anual: 12 }
 
 export function NewContractForm({ patientId, defaultPlan, defaultValue, onDone }: {
@@ -22,10 +23,12 @@ export function NewContractForm({ patientId, defaultPlan, defaultValue, onDone }
   const [plan, setPlan] = React.useState<PlanType>(defaultPlan ?? 'mensal')
   const [value, setValue] = React.useState(defaultValue ? String(defaultValue) : '')
   const [startDate, setStartDate] = React.useState(new Date().toISOString().slice(0, 10))
+  const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>('pix_parcelado')
   const [notes, setNotes] = React.useState('')
   const [loading, setLoading] = React.useState(false)
 
-  const count = INSTALLMENTS[plan]
+  // Forma de pagamento à vista → 1 parcela, ignora contagem do plano
+  const count = paymentMethod === 'avista' ? 1 : INSTALLMENTS[plan]
   const per = value ? (Number(value) / count) : 0
 
   async function submit(e: React.FormEvent) {
@@ -41,6 +44,7 @@ export function NewContractForm({ patientId, defaultPlan, defaultValue, onDone }
           plan_type: plan,
           total_value: Number(value),
           start_date: startDate,
+          payment_method: paymentMethod,
           notes: notes || undefined,
         }),
       })
@@ -80,12 +84,20 @@ export function NewContractForm({ patientId, defaultPlan, defaultValue, onDone }
           <Input type="number" step="0.01" value={value} onChange={(e) => setValue(e.target.value)} placeholder="0,00" required />
         </div>
         <div>
-          <Label>Vencimento da 1ª parcela</Label>
+          <Label>Vencimento {paymentMethod === 'avista' ? 'do pagamento' : 'da 1ª parcela'}</Label>
           <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
         </div>
-        <div className="flex items-end text-xs text-muted-foreground">
-          {count} parcela{count > 1 ? 's' : ''} · {per > 0 ? `R$ ${per.toFixed(2)}/mês` : '—'}
+        <div>
+          <Label>Forma de pagamento</Label>
+          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)} className="w-full h-9 rounded-md border px-3 text-sm bg-background">
+            <option value="avista">À vista</option>
+            <option value="pix_parcelado">Parcelado via PIX</option>
+            <option value="credito_parcelado">Parcelado no crédito</option>
+          </select>
         </div>
+      </div>
+      <div className="text-xs text-muted-foreground">
+        {count} parcela{count > 1 ? 's' : ''} · {per > 0 ? `R$ ${per.toFixed(2)}${count > 1 ? '/mês' : ''}` : '—'}
       </div>
       <div>
         <Label>Observações</Label>

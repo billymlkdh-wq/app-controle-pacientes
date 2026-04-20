@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
     total_value: number
     start_date: string          // vencimento da 1ª parcela (YYYY-MM-DD)
     installments_count?: number // opcional; default = INSTALLMENTS_BY_PLAN
+    payment_method?: 'avista' | 'pix_parcelado' | 'credito_parcelado'
     notes?: string
     renewed_from_id?: string
   }
@@ -63,7 +64,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'patient_id, plan_type, total_value, start_date obrigatórios' }, { status: 400 })
   }
 
-  const count = body.installments_count ?? INSTALLMENTS_BY_PLAN[body.plan_type]
+  const paymentMethod = body.payment_method ?? 'pix_parcelado'
+  // À vista = 1 parcela sempre
+  const count = paymentMethod === 'avista'
+    ? 1
+    : (body.installments_count ?? INSTALLMENTS_BY_PLAN[body.plan_type])
   if (!count || count < 1) return NextResponse.json({ error: 'installments_count inválido' }, { status: 400 })
 
   const end_date = count === 1 ? body.start_date : addMonths(body.start_date, count - 1)
@@ -77,10 +82,14 @@ export async function POST(request: NextRequest) {
     installments_count: count,
     start_date: body.start_date,
     end_date,
+    payment_method: paymentMethod,
     notes: body.notes ?? null,
     renewed_from_id: body.renewed_from_id ?? null,
   }).select().single()
   if (cErr || !contract) return NextResponse.json({ error: cErr?.message ?? 'Falha ao criar contrato' }, { status: 400 })
+
+  // Método da parcela: pix_parcelado/avista → pix · credito_parcelado → cartao
+  const installmentMethod: 'pix' | 'cartao' = paymentMethod === 'credito_parcelado' ? 'cartao' : 'pix'
 
   // Gera parcelas. Ajusta a última pra fechar o total exato (evita erro de arredondamento).
   const rows = Array.from({ length: count }, (_, i) => {
@@ -92,6 +101,7 @@ export async function POST(request: NextRequest) {
       installment_num: i + 1,
       due_date: addMonths(body.start_date, i),
       amount,
+      method: installmentMethod,
       status: 'pendente' as const,
       date: null,
     }
