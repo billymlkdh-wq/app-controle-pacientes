@@ -1,5 +1,5 @@
 // Verifica o hashed_token gerado pelo admin (bypass do PKCE).
-// Chama supabase.auth.verifyOtp no cliente → cria a sessão → vai pro next.
+// useSearchParams deve ficar dentro de <Suspense/> em Next 15.
 'use client'
 import * as React from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 
 type OtpType = 'invite' | 'recovery' | 'signup' | 'email_change' | 'magiclink'
 
-export default function VerifyPage() {
+function VerifyInner() {
   const router = useRouter()
   const params = useSearchParams()
   const [msg, setMsg] = React.useState('Validando seu link...')
@@ -41,5 +41,13 @@ export default function VerifyPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <p className="text-sm text-muted-foreground">{msg}</p>
     </div>
+  )
+}
+
+export default function VerifyPage() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">Carregando...</div>}>
+      <VerifyInner />
+    </React.Suspense>
   )
 }
