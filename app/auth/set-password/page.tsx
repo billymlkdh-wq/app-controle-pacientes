@@ -37,6 +37,10 @@ export default function SetPasswordPage() {
     // Role decide o destino
     const { data: { user } } = await supabase.auth.getUser()
     const role = (user?.user_metadata as { role?: string } | null)?.role
+    // Fallback: garante vínculo patients.user_id ↔ auth.uid (caso trigger SQL não tenha rodado)
+    if (role !== 'admin') {
+      await fetch('/api/auth/link-patient', { method: 'POST' }).catch(() => {})
+    }
     router.replace(role === 'admin' ? '/dashboard' : '/portal')
     router.refresh()
   }
