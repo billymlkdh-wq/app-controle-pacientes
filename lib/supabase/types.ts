@@ -59,17 +59,44 @@ export type Database = {
         Row: {
           id: string
           patient_id: string
-          date: string
+          date: string | null
           due_date: string | null
           amount: number
           method: 'pix' | 'cartao' | 'dinheiro' | 'transferencia' | 'boleto' | null
           status: 'pago' | 'pendente' | 'atrasado'
           notes: string | null
+          contract_id: string | null
+          installment_num: number | null
           created_at: string
           updated_at: string
         }
-        Insert: Partial<Database['public']['Tables']['payments']['Row']> & { patient_id: string; date: string; amount: number }
+        Insert: Partial<Database['public']['Tables']['payments']['Row']> & { patient_id: string; amount: number }
         Update: Partial<Database['public']['Tables']['payments']['Row']>
+      }
+      plan_contracts: {
+        Row: {
+          id: string
+          patient_id: string
+          plan_type: 'avulso' | 'mensal' | 'trimestral' | 'semestral' | 'anual'
+          total_value: number
+          installments_count: number
+          start_date: string
+          end_date: string
+          status: 'ativo' | 'encerrado' | 'cancelado'
+          notes: string | null
+          renewed_from_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['plan_contracts']['Row']> & {
+          patient_id: string
+          plan_type: Database['public']['Tables']['plan_contracts']['Row']['plan_type']
+          total_value: number
+          installments_count: number
+          start_date: string
+          end_date: string
+        }
+        Update: Partial<Database['public']['Tables']['plan_contracts']['Row']>
       }
       questionnaire_questions: {
         Row: {
