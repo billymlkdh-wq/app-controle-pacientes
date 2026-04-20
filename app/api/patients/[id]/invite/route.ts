@@ -1,7 +1,7 @@
-// Gera o link de criação/redefinição de senha do paciente SEM enviar email.
-// Retorna { url, mode, email, expires_at } para o admin copiar/compartilhar
-// (WhatsApp, etc). Usa generateLink — se o usuário ainda não existe em
-// auth.users, cria via invite; se existe, gera link de recovery.
+// Gera link de acesso do paciente (sem enviar email).
+// Retornamos um link para /auth/verify na NOSSA app, usando o `hashed_token`
+// do admin.generateLink. Isso evita PKCE (que quebra quando o admin gera o
+// link em outro navegador) — o cliente chama verifyOtp diretamente.
 import { NextResponse, type NextRequest } from 'next/server'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
 
@@ -23,22 +23,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const admin = createAdminClient()
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin
-  const redirectTo = `${siteUrl}/auth/callback?next=/auth/set-password`
 
   try {
     // Verifica se o usuário já existe
     const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 })
     const existing = list?.users?.find((u) => u.email?.toLowerCase() === patient.email!.toLowerCase())
 
-    const linkType = existing ? 'recovery' : 'invite'
+    const linkType: 'invite' | 'recovery' = existing ? 'recovery' : 'invite'
     const { data, error: linkErr } = await admin.auth.admin.generateLink({
       type: linkType,
       email: patient.email,
       options: {
-        redirectTo,
-        ...(linkType === 'invite'
-          ? { data: { role: 'patient', patient_id: patient.id } }
-          : {}),
+        redirectTo: `${siteUrl}/auth/set-password`,
+        ...(linkType === 'invite' ? { data: { role: 'patient', patient_id: patient.id } } : {}),
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any)
@@ -46,8 +43,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const props = (data as any)?.properties ?? {}
-    const url: string | undefined = props.action_link
-    if (!url) throw new Error('Supabase não retornou action_link')
+    const hashedToken: string | undefined = props.hashed_token
+    if (!hashedToken) throw new Error('Supabase não retornou hashed_token')
+
+    const url = `${siteUrl}/auth/verify?token_hash=${encodeURIComponent(hashedToken)}&type=${linkType}&next=${encodeURIComponent('/auth/set-password')}`
 
     return NextResponse.json({
       ok: true,
