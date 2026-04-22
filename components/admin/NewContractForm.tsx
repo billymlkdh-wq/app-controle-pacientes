@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
+import { todayBR } from '@/lib/utils'
 
 type PlanType = 'avulso' | 'mensal' | 'trimestral' | 'semestral' | 'anual'
 type PaymentMethod = 'avista' | 'pix_parcelado' | 'credito_parcelado'
@@ -22,7 +23,7 @@ export function NewContractForm({ patientId, defaultPlan, defaultValue, onDone }
   const [open, setOpen] = React.useState(false)
   const [plan, setPlan] = React.useState<PlanType>(defaultPlan ?? 'mensal')
   const [value, setValue] = React.useState(defaultValue ? String(defaultValue) : '')
-  const [startDate, setStartDate] = React.useState(new Date().toISOString().slice(0, 10))
+  const [startDate, setStartDate] = React.useState(todayBR())
   const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>('pix_parcelado')
   const [notes, setNotes] = React.useState('')
   const [loading, setLoading] = React.useState(false)

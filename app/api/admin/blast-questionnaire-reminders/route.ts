@@ -3,6 +3,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendWhatsAppText } from '@/lib/notifications/whatsapp'
+import { todayBR } from '@/lib/utils'
 
 type PatientRow = { id: string; name: string; whatsapp_phone: string | null; phone: string | null }
 type ScheduleRow = {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
   const role = (user.user_metadata as { role?: string } | null)?.role
   if (role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayBR()
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin
   const portalLink = `${siteUrl}/questionnaire`
 

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { formatDateBR } from '@/lib/utils'
+import { formatDateBR, todayBR } from '@/lib/utils'
 import { daysUntilDue, isOverdue } from '@/lib/questionnaire/schedule'
 
 export default async function PortalHome() {
@@ -12,15 +12,18 @@ export default async function PortalHome() {
   const { data: { user } } = await supabase.auth.getUser()
   const { data: patient } = await supabase.from('patients').select('*').eq('user_id', user!.id).single()
 
-  const { data: schedule } = await supabase
-    .from('questionnaire_schedule')
-    .select('*')
-    .in('status', ['pending', 'overdue'])
-    .order('due_date', { ascending: true })
-    .limit(1)
-    .maybeSingle()
+  const { data: schedule } = patient
+    ? await supabase
+        .from('questionnaire_schedule')
+        .select('*')
+        .eq('patient_id', patient.id)
+        .in('status', ['pending', 'overdue'])
+        .order('due_date', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+    : { data: null }
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayBR()
   const overdue = schedule ? isOverdue(schedule.due_date) : false
   const days = schedule ? daysUntilDue(schedule.due_date) : null
   // "Bloqueado" = existe schedule mas data ainda não chegou (paciente acabou de responder)

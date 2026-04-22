@@ -3,15 +3,17 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
-async function guard() {
+async function guardAdmin() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' as const, status: 401 as const }
+  const role = (user.user_metadata as { role?: string } | null)?.role
+  if (role !== 'admin') return { error: 'Forbidden' as const, status: 403 as const }
   return { supabase, user }
 }
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const ctx = await guard()
+  const ctx = await guardAdmin()
   if ('error' in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status })
   const { id } = await params
   const { data, error } = await ctx.supabase.from('patients').select('*').eq('id', id).single()
@@ -20,7 +22,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const ctx = await guard()
+  const ctx = await guardAdmin()
   if ('error' in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status })
   const { id } = await params
   const body = await request.json()
@@ -32,10 +34,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const ctx = await guard()
+  const ctx = await guardAdmin()
   if ('error' in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status })
-  const role = (ctx.user.user_metadata as { role?: string } | null)?.role
-  if (role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const { id } = await params
   const { error } = await ctx.supabase.from('patients').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })

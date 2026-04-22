@@ -16,3 +16,21 @@ export function formatDateBR(date: string | Date | null | undefined): string {
   const d = typeof date === 'string' ? new Date(date) : date
   return d.toLocaleDateString('pt-BR')
 }
+
+/**
+ * Data de hoje no fuso America/Sao_Paulo, formato YYYY-MM-DD.
+ * Evita bug de `new Date().toISOString().slice(0,10)` que roda em UTC
+ * — depois das 21h no Brasil, retorna a data de amanhã.
+ */
+export function todayBR(): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date())
+  const y = parts.find((p) => p.type === 'year')!.value
+  const m = parts.find((p) => p.type === 'month')!.value
+  const d = parts.find((p) => p.type === 'day')!.value
+  return `${y}-${m}-${d}`
+}

@@ -6,13 +6,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { todayBR } from '@/lib/utils'
 
 type Method = 'pix' | 'cartao' | 'dinheiro' | 'transferencia' | 'boleto'
 
 export function RegisterPaymentButton({ paymentId, disabled }: { paymentId: string; disabled?: boolean }) {
   const router = useRouter()
   const [open, setOpen] = React.useState(false)
-  const [date, setDate] = React.useState(new Date().toISOString().slice(0, 10))
+  const [date, setDate] = React.useState(todayBR())
   const [method, setMethod] = React.useState<Method>('pix')
   const [notes, setNotes] = React.useState('')
   const [loading, setLoading] = React.useState(false)

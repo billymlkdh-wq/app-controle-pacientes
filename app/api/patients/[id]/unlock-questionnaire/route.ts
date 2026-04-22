@@ -4,6 +4,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { todayBR } from '@/lib/utils'
 
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient()
@@ -13,7 +14,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   if (role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id } = await params
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayBR()
 
   // Evita duplicar se já existe um pendente aberto pra esse paciente
   const { data: existing } = await supabase

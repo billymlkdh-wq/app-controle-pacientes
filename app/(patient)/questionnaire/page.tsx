@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { QuestionnaireForm } from '@/components/patient/QuestionnaireForm'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { formatDateBR } from '@/lib/utils'
+import { formatDateBR, todayBR } from '@/lib/utils'
 import { daysUntilDue } from '@/lib/questionnaire/schedule'
 
 export default async function QuestionnairePage() {
@@ -28,7 +28,7 @@ export default async function QuestionnairePage() {
     .limit(1)
     .maybeSingle()
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayBR()
   const isLocked = schedule ? schedule.due_date > today : true
 
   // Se está bloqueado (ou sem schedule), mostra aviso com próxima data

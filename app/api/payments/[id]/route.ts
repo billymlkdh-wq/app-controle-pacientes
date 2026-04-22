@@ -3,6 +3,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { todayBR } from '@/lib/utils'
 
 async function requireAdmin() {
   const supabase = await createClient()
@@ -28,7 +29,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   // Auto: marcando como "pago" sem data, usa hoje.
   if (body.status === 'pago' && !body.date) {
-    body.date = new Date().toISOString().slice(0, 10)
+    body.date = todayBR()
   }
 
   const { data, error } = await ctx.supabase.from('payments').update(body).eq('id', id).select('*').single()
