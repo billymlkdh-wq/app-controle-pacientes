@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDateBR } from '@/lib/utils'
+import { BlastQuestionnaireRemindersButton } from '@/components/admin/BlastQuestionnaireRemindersButton'
 
 export default async function QuestionnairesPage() {
   const supabase = await createClient()
@@ -18,6 +19,16 @@ export default async function QuestionnairesPage() {
         <h1 className="text-2xl font-semibold">Respostas</h1>
         <Link href="/questionnaires/questions" className="text-sm text-primary hover:underline">Gerenciar perguntas</Link>
       </div>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Lembretes manuais</CardTitle></CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Dispara WhatsApp para todos os pacientes com questionário liberado (hoje ou atrasado) e que ainda não responderam.
+          </p>
+          <BlastQuestionnaireRemindersButton />
+        </CardContent>
+      </Card>
       <div className="space-y-2">
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         {((data ?? []) as any[]).map((r) => (
