@@ -8,6 +8,7 @@ import { formatBRL, formatDateBR } from '@/lib/utils'
 import { QuestionnaireEvolutionChart } from '@/components/admin/QuestionnaireEvolutionChart'
 import { AccessLinkPanel } from '@/components/admin/AccessLinkPanel'
 import { UnlockQuestionnaireButton } from '@/components/admin/UnlockQuestionnaireButton'
+import { EditPatientForm } from '@/components/admin/EditPatientForm'
 
 export default async function PatientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -37,6 +38,8 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
         <Link href={`/patients/${id}/financial`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Financeiro</Link>
         <UnlockQuestionnaireButton patientId={id} />
       </div>
+
+      <EditPatientForm patient={p} />
 
       <AccessLinkPanel patientId={id} hasEmail={!!p.email} />
 

@@ -36,6 +36,9 @@ serve(async (req) => {
   // 1. Marca atrasos (espelho do SQL function — chama via rpc se existir, senão inline)
   await supabase.rpc('mark_overdue_schedules').catch(() => null)
 
+  // 1b. Verifica expirações de plano (alerta 30d antes + encerra contratos vencidos + desativa pacientes)
+  await supabase.rpc('check_plan_expirations').catch(() => null)
+
   // 2. Busca schedules pending/overdue com pacientes
   const { data: schedules } = await supabase
     .from('questionnaire_schedule')
