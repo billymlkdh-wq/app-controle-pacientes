@@ -7,6 +7,15 @@ import {
   RevenueChart, PatientsChart,
   type RevenuePoint, type PatientsPoint,
 } from '@/components/admin/DashboardCharts'
+import {
+  PLANOS_STATUS,
+  TOTAIS_STATUS,
+  VENDAS_PLANO_QTD,
+  VENDAS_ORIGEM_QTD,
+  TOTAL_VENDAS_QTD_JAN,
+  TOTAL_VENDAS_JAN,
+  VENDAS_ORIGEM_REAIS,
+} from '@/lib/financial-data'
 
 const MONTH_LABEL = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
@@ -132,6 +141,120 @@ export default async function DashboardPage() {
           <CardHeader><CardTitle className="text-base">Pacientes (12 meses)</CardTitle></CardHeader>
           <CardContent><PatientsChart data={patientsData} /></CardContent>
         </Card>
+      </div>
+
+      {/* ── Tabelas resumo financeiro (planilha Jan/26) ─────────────────────── */}
+      <div className="grid gap-4 lg:grid-cols-3">
+
+        {/* Planos por Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Planos por Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-muted-foreground text-left">
+                  <th className="py-1 pr-3">Plano</th>
+                  <th className="py-1 text-center">Ativos</th>
+                  <th className="py-1 text-center">Canc.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {PLANOS_STATUS.filter((r) => r.total > 0).map((row) => (
+                  <tr key={row.plano} className="border-b last:border-0">
+                    <td className="py-1 pr-3">{row.plano}</td>
+                    <td className="py-1 text-center text-blue-600 font-semibold">{row.ativos || '—'}</td>
+                    <td className="py-1 text-center text-destructive">{row.cancelados || '—'}</td>
+                  </tr>
+                ))}
+                <tr className="border-t-2 font-semibold bg-muted/30">
+                  <td className="py-1 pr-3">Total</td>
+                  <td className="py-1 text-center text-blue-600">{TOTAIS_STATUS.ativos}</td>
+                  <td className="py-1 text-center text-destructive">{TOTAIS_STATUS.cancelados}</td>
+                </tr>
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+
+        {/* Vendas por Plano — Qtd */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Vendas por Plano <span className="text-muted-foreground font-normal text-xs">Jan/26</span></CardTitle>
+          </CardHeader>
+          <CardContent>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-muted-foreground text-left">
+                  <th className="py-1 pr-3">Plano</th>
+                  <th className="py-1 text-right">Qtd</th>
+                  <th className="py-1 text-right">R$</th>
+                </tr>
+              </thead>
+              <tbody>
+                {VENDAS_PLANO_QTD.filter((r) => r.jan > 0).map((row) => {
+                  const reais = VENDAS_ORIGEM_REAIS  // reuse data shape below
+                  void reais
+                  const planoReais = [
+                    { plano: 'Trimestral', jan: 3335 },
+                    { plano: 'Semestral', jan: 1400 },
+                    { plano: 'Anual', jan: 24720 },
+                  ]
+                  const r = planoReais.find((p) => p.plano === row.plano)
+                  return (
+                    <tr key={row.plano} className="border-b last:border-0">
+                      <td className="py-1 pr-3">{row.plano}</td>
+                      <td className="py-1 text-right font-semibold">{row.jan}</td>
+                      <td className="py-1 text-right text-emerald-600">{r ? formatBRL(r.jan) : '—'}</td>
+                    </tr>
+                  )
+                })}
+                <tr className="border-t-2 font-semibold bg-muted/30">
+                  <td className="py-1 pr-3">Total</td>
+                  <td className="py-1 text-right">{TOTAL_VENDAS_QTD_JAN}</td>
+                  <td className="py-1 text-right text-emerald-600">{formatBRL(TOTAL_VENDAS_JAN)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+
+        {/* Vendas por Origem — Qtd */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Vendas por Origem <span className="text-muted-foreground font-normal text-xs">Jan/26</span></CardTitle>
+          </CardHeader>
+          <CardContent>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-muted-foreground text-left">
+                  <th className="py-1 pr-3">Origem</th>
+                  <th className="py-1 text-right">Qtd</th>
+                  <th className="py-1 text-right">R$</th>
+                </tr>
+              </thead>
+              <tbody>
+                {VENDAS_ORIGEM_QTD.filter((r) => r.jan > 0).map((row) => {
+                  const r = VENDAS_ORIGEM_REAIS.find((o) => o.origem === row.origem)
+                  return (
+                    <tr key={row.origem} className="border-b last:border-0">
+                      <td className="py-1 pr-3">{row.origem}</td>
+                      <td className="py-1 text-right font-semibold">{row.jan}</td>
+                      <td className="py-1 text-right text-emerald-600">{r?.jan ? formatBRL(r.jan) : '—'}</td>
+                    </tr>
+                  )
+                })}
+                <tr className="border-t-2 font-semibold bg-muted/30">
+                  <td className="py-1 pr-3">Total</td>
+                  <td className="py-1 text-right">{TOTAL_VENDAS_QTD_JAN}</td>
+                  <td className="py-1 text-right text-emerald-600">{formatBRL(TOTAL_VENDAS_JAN)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+
       </div>
     </div>
   )
