@@ -9,28 +9,90 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase/client'
 
+type ScaleOptions = { min: number; max: number; minLabel: string; maxLabel: string }
+
 type Question = {
   id: string
   order_num: number
   question_text: string
-  question_type: 'text' | 'number' | 'scale' | 'choice' | 'multiple_choice'
+  question_type: 'text' | 'number' | 'scale' | 'choice' | 'multiple_choice' | 'section'
+  subtitle: string | null
+  image_url: string | null
   is_numeric_chart: boolean
   allow_media: boolean
-  options: string[] | null
+  options: string[] | ScaleOptions | null
 }
 
 type ResponseState = {
   text: string
-  selected: string[] // para multiple_choice
+  selected: string[]
   mediaUrls: string[]
   uploading: boolean
 }
 
 const MAX_FILES = 5
-const MAX_SIZE_BYTES = 26214400 // 25MB
+const MAX_SIZE_BYTES = 26214400 // 25 MB
 
 function initialState(): ResponseState {
   return { text: '', selected: [], mediaUrls: [], uploading: false }
+}
+
+function parseScaleOptions(opts: unknown): ScaleOptions {
+  if (opts && typeof opts === 'object' && !Array.isArray(opts)) {
+    const o = opts as Record<string, unknown>
+    return {
+      min: Number(o.min ?? 0),
+      max: Number(o.max ?? 10),
+      minLabel: String(o.minLabel ?? ''),
+      maxLabel: String(o.maxLabel ?? ''),
+    }
+  }
+  return { min: 0, max: 10, minLabel: '', maxLabel: '' }
+}
+
+// ── Scale button group ────────────────────────────────────────────────────────
+function ScaleButtons({
+  opts,
+  value,
+  onChange,
+  disabled,
+}: {
+  opts: ScaleOptions
+  value: string
+  onChange: (v: string) => void
+  disabled: boolean
+}) {
+  const nums = Array.from({ length: opts.max - opts.min + 1 }, (_, i) => opts.min + i)
+  const selected = value !== '' ? Number(value) : null
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {nums.map((n) => (
+          <button
+            key={n}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(String(n))}
+            className={[
+              'w-9 h-9 rounded-md border text-sm font-medium transition-colors',
+              selected === n
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-background hover:bg-accent border-border',
+            ].join(' ')}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+      {(opts.minLabel || opts.maxLabel) && (
+        <div className="flex justify-between text-xs text-muted-foreground px-0.5">
+          <span>{opts.minLabel}</span>
+          <span>{opts.maxLabel}</span>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function QuestionnaireForm({
@@ -47,7 +109,9 @@ export function QuestionnaireForm({
   const [loading, setLoading] = React.useState(false)
   const [state, setState] = React.useState<Record<string, ResponseState>>(() => {
     const init: Record<string, ResponseState> = {}
-    for (const q of questions) init[q.id] = initialState()
+    for (const q of questions) {
+      if (q.question_type !== 'section') init[q.id] = initialState()
+    }
     return init
   })
 
@@ -59,7 +123,7 @@ export function QuestionnaireForm({
       const cur = prev[qid]
       let next: string[]
       if (multi) next = cur.selected.includes(opt) ? cur.selected.filter((x) => x !== opt) : [...cur.selected, opt]
-      else next = [opt]
+      else next = cur.selected[0] === opt ? [] : [opt]
       return { ...prev, [qid]: { ...cur, selected: next } }
     })
   }
@@ -108,7 +172,8 @@ export function QuestionnaireForm({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    const responses = questions.map((q) => {
+    const answerable = questions.filter((q) => q.question_type !== 'section')
+    const responses = answerable.map((q) => {
       const s = state[q.id]
       const isNumeric = q.question_type === 'number' || q.question_type === 'scale'
       if (q.question_type === 'multiple_choice') {
@@ -149,52 +214,132 @@ export function QuestionnaireForm({
     router.refresh()
   }
 
+  // Track display order num (sections don't count)
+  let questionCounter = 0
+
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-4">
       {questions.map((q) => {
+        // ── Section header ──────────────────────────────────────────────────
+        if (q.question_type === 'section') {
+          return (
+            <div key={q.id} className="pt-4 first:pt-0">
+              <div className="rounded-lg bg-primary/10 border border-primary/20 px-4 py-3">
+                <h2 className="text-base font-semibold text-primary">{q.question_text}</h2>
+              </div>
+            </div>
+          )
+        }
+
+        questionCounter++
         const s = state[q.id] ?? initialState()
+        const scaleOpts = q.question_type === 'scale' ? parseScaleOptions(q.options) : null
+        const choiceOpts = (q.question_type === 'choice' || q.question_type === 'multiple_choice')
+          ? (Array.isArray(q.options) ? (q.options as string[]) : ['Sim', 'Não'])
+          : []
+
         return (
-          <div key={q.id} className="space-y-2 rounded-md border p-4">
-            <Label className="text-base">{q.order_num}. {q.question_text}</Label>
-
-            {q.question_type === 'text' && (
-              <Textarea value={s.text} onChange={(e) => updateText(q.id, e.target.value)} disabled={loading} />
+          <div key={q.id} className="rounded-md border p-4 space-y-3">
+            {/* Image (above question text) */}
+            {q.image_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={q.image_url}
+                alt="Imagem ilustrativa"
+                className="w-full rounded-md object-contain max-h-72"
+                loading="lazy"
+              />
             )}
+
+            {/* Question text */}
+            <Label className="text-base leading-snug">
+              {questionCounter}. {q.question_text}
+            </Label>
+
+            {/* Subtitle / description */}
+            {q.subtitle && (
+              <p className="text-xs text-muted-foreground whitespace-pre-line leading-relaxed">
+                {q.subtitle}
+              </p>
+            )}
+
+            {/* ── Scale ── */}
+            {q.question_type === 'scale' && scaleOpts && (
+              <ScaleButtons
+                opts={scaleOpts}
+                value={s.text}
+                onChange={(v) => updateText(q.id, v)}
+                disabled={loading}
+              />
+            )}
+
+            {/* ── Number ── */}
             {q.question_type === 'number' && (
-              <Input type="number" step="0.1" value={s.text} onChange={(e) => updateText(q.id, e.target.value)} disabled={loading} />
+              <Input
+                type="number"
+                step="0.1"
+                placeholder="0.0"
+                value={s.text}
+                onChange={(e) => updateText(q.id, e.target.value)}
+                disabled={loading}
+                className="max-w-xs"
+              />
             )}
-            {q.question_type === 'scale' && (
-              <Input type="number" min={1} max={10} value={s.text} onChange={(e) => updateText(q.id, e.target.value)} disabled={loading} />
+
+            {/* ── Text (long) ── */}
+            {q.question_type === 'text' && (
+              <Textarea
+                placeholder="Sua resposta..."
+                value={s.text}
+                onChange={(e) => updateText(q.id, e.target.value)}
+                disabled={loading}
+                rows={3}
+              />
             )}
+
+            {/* ── Choice (radio) ── */}
             {q.question_type === 'choice' && (
-              <div className="space-y-1">
-                {(q.options ?? ['Sim', 'Parcialmente', 'Não']).map((o) => (
-                  <label key={o} className="flex items-center gap-2 text-sm">
-                    <input type="radio" name={`q-${q.id}`} checked={s.selected[0] === o}
-                      onChange={() => toggleOption(q.id, o, false)} disabled={loading} />
+              <div className="space-y-2">
+                {choiceOpts.map((o) => (
+                  <label key={o} className="flex items-center gap-2.5 text-sm cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`q-${q.id}`}
+                      checked={s.selected[0] === o}
+                      onChange={() => toggleOption(q.id, o, false)}
+                      disabled={loading}
+                      className="accent-primary"
+                    />
                     {o}
                   </label>
                 ))}
-              </div>
-            )}
-            {q.question_type === 'multiple_choice' && (
-              <div className="space-y-1">
-                {(q.options ?? []).map((o) => (
-                  <label key={o} className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" checked={s.selected.includes(o)}
-                      onChange={() => toggleOption(q.id, o, true)} disabled={loading} />
-                    {o}
-                  </label>
-                ))}
-                {(!q.options || q.options.length === 0) && (
-                  <p className="text-xs text-muted-foreground">Sem opções configuradas.</p>
-                )}
               </div>
             )}
 
+            {/* ── Multiple choice (checkbox) ── */}
+            {q.question_type === 'multiple_choice' && (
+              <div className="space-y-2">
+                {choiceOpts.map((o) => (
+                  <label key={o} className="flex items-center gap-2.5 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={s.selected.includes(o)}
+                      onChange={() => toggleOption(q.id, o, true)}
+                      disabled={loading}
+                      className="accent-primary"
+                    />
+                    {o}
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {/* ── Media upload ── */}
             {q.allow_media && (
-              <div className="mt-3 space-y-2">
-                <Label className="text-sm">Anexar fotos/vídeos (até {MAX_FILES}, 25MB cada)</Label>
+              <div className="space-y-2 pt-1">
+                <Label className="text-sm text-muted-foreground">
+                  Anexar fotos/vídeos (até {MAX_FILES}, 25MB cada)
+                </Label>
                 <Input
                   type="file"
                   accept="image/*,video/*"
@@ -208,8 +353,13 @@ export function QuestionnaireForm({
                     {s.mediaUrls.map((u) => (
                       <li key={u} className="flex items-center justify-between gap-2">
                         <span className="truncate">{u.split('/').pop()}</span>
-                        <button type="button" className="text-red-600 hover:underline"
-                          onClick={() => removeMedia(q.id, u)}>remover</button>
+                        <button
+                          type="button"
+                          className="text-destructive hover:underline shrink-0"
+                          onClick={() => removeMedia(q.id, u)}
+                        >
+                          remover
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -219,7 +369,10 @@ export function QuestionnaireForm({
           </div>
         )
       })}
-      <Button type="submit" disabled={loading}>{loading ? 'Enviando...' : 'Enviar respostas'}</Button>
+
+      <Button type="submit" disabled={loading} className="w-full">
+        {loading ? 'Enviando...' : 'Enviar respostas'}
+      </Button>
     </form>
   )
 }
