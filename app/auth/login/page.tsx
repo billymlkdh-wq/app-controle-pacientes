@@ -43,10 +43,15 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      const supabase = createClient()
-      const redirectTo = `${window.location.origin}/auth/callback?next=/auth/set-password`
-      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
-      if (error) throw error
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error ?? 'Falha ao enviar e-mail')
+      }
       setResetSent(true)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Falha ao enviar e-mail')

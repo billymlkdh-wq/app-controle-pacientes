@@ -25,6 +25,48 @@ function fromAddress(): string {
 
 export type SendEmailResult = { ok: boolean; id?: string; error?: string }
 
+export async function sendPasswordResetEmail({
+  to,
+  portalLink,
+}: {
+  to: string
+  portalLink: string
+}): Promise<SendEmailResult> {
+  const transport = getTransport()
+  if (!transport) return { ok: false, error: 'GMAIL_USER / GMAIL_APP_PASSWORD not set' }
+
+  try {
+    const info = await transport.sendMail({
+      from: fromAddress(),
+      to,
+      subject: '🔑 Redefinição de senha — Portal do Paciente',
+      html: `
+        <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; color: #1a1a1a;">
+          <h2 style="color: #16a34a;">Redefinir sua senha 🔑</h2>
+          <p>Recebemos uma solicitação para redefinir a senha da sua conta no portal de acompanhamento.</p>
+          <p>Clique no botão abaixo para criar uma nova senha:</p>
+          <div style="margin: 28px 0; text-align: center;">
+            <a href="${portalLink}"
+               style="background: #16a34a; color: #fff; padding: 12px 28px; border-radius: 8px;
+                      text-decoration: none; font-weight: 600; font-size: 16px;">
+              Redefinir senha
+            </a>
+          </div>
+          <p style="color: #666; font-size: 13px;">
+            Se o botão não funcionar, acesse: <a href="${portalLink}">${portalLink}</a>
+          </p>
+          <p style="color: #888; font-size: 12px;">Se você não solicitou isso, ignore este e-mail.</p>
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+          <p style="color: #999; font-size: 12px;">Rafael Bolson — Nutricionista Clínico e Esportivo</p>
+        </div>
+      `,
+    })
+    return { ok: true, id: info.messageId }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'erro' }
+  }
+}
+
 export async function sendQuestionnaireUnlockedEmail({
   to,
   name,
