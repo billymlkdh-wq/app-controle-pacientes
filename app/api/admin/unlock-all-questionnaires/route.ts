@@ -1,11 +1,39 @@
 // Libera o questionário para TODOS os pacientes ativos de uma vez.
 // Insere questionnaire_schedule pending hoje apenas para quem ainda não tem aberto.
-import { NextResponse } from 'next/server'
+// Após liberar, envia email + WhatsApp para cada paciente notificado.
+import { NextResponse, type NextRequest } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { todayBR } from '@/lib/utils'
+import { sendWhatsAppText } from '@/lib/notifications/whatsapp'
+import { sendQuestionnaireUnlockedEmail } from '@/lib/notifications/email'
 
-export async function POST() {
+type PatientRow = {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  whatsapp_phone: string | null
+}
+
+async function notifyPatient(patient: PatientRow, portalLink: string) {
+  const firstName = (patient.name || '').split(/\s+/)[0] || patient.name
+  const phone = patient.whatsapp_phone ?? patient.phone ?? null
+
+  await Promise.allSettled([
+    phone
+      ? sendWhatsAppText({
+          to: phone,
+          message: `Oi ${firstName}! Seu questionário quinzenal está disponível. Responde aqui quando puder: ${portalLink}`,
+        })
+      : Promise.resolve(),
+    patient.email
+      ? sendQuestionnaireUnlockedEmail({ to: patient.email, name: patient.name, portalLink })
+      : Promise.resolve(),
+  ])
+}
+
+export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -13,6 +41,8 @@ export async function POST() {
   if (role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const today = todayBR()
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin
+  const portalLink = `${siteUrl}/questionnaire`
 
   // Busca schedules pending/overdue de pacientes ativos
   const { data: openSchedules } = await supabase
@@ -24,13 +54,15 @@ export async function POST() {
   const futureSchedules = (openSchedules ?? []).filter((s) => s.due_date > today)
   const openPatientIds = new Set((openSchedules ?? []).map((r) => r.patient_id))
 
-  // Busca todos os pacientes ativos
+  // Busca todos os pacientes ativos com dados de contato
   const { data: patients, error: pErr } = await supabase
     .from('patients')
-    .select('id')
+    .select('id, name, email, phone, whatsapp_phone')
     .eq('active', true)
 
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 400 })
+
+  const patientMap = new Map<string, PatientRow>((patients ?? []).map((p) => [p.id, p]))
 
   // Pacientes sem nenhum schedule aberto → inserir pending com due_date=hoje
   const toInsert = (patients ?? []).filter((p) => !openPatientIds.has(p.id))
@@ -55,10 +87,21 @@ export async function POST() {
   revalidatePath('/patients')
   revalidatePath('/questionnaires')
 
+  // Notifica pacientes recém-desbloqueados (novos + futuros adiantados)
+  const patientsToNotify: PatientRow[] = [
+    ...toInsert,
+    ...futureSchedules.map((s) => patientMap.get(s.patient_id)).filter(Boolean) as PatientRow[],
+  ]
+
+  // Fire-and-forget: envia notificações em paralelo sem bloquear a resposta
+  // (usa await para aguardar envio — ajuste para void se quiser retorno mais rápido)
+  await Promise.allSettled(patientsToNotify.map((p) => notifyPatient(p, portalLink)))
+
   const totalUnlocked = toInsert.length + futureSchedules.length
   return NextResponse.json({
     ok: true,
     unlocked: totalUnlocked,
     already_open: (openSchedules ?? []).length - futureSchedules.length,
+    notified: patientsToNotify.length,
   })
 }
