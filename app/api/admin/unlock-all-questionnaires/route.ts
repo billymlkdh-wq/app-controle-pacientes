@@ -87,21 +87,15 @@ export async function POST(request: NextRequest) {
   revalidatePath('/patients')
   revalidatePath('/questionnaires')
 
-  // Notifica pacientes recém-desbloqueados (novos + futuros adiantados)
-  const patientsToNotify: PatientRow[] = [
-    ...toInsert,
-    ...futureSchedules.map((s) => patientMap.get(s.patient_id)).filter(Boolean) as PatientRow[],
-  ]
-
-  // Fire-and-forget: envia notificações em paralelo sem bloquear a resposta
-  // (usa await para aguardar envio — ajuste para void se quiser retorno mais rápido)
-  await Promise.allSettled(patientsToNotify.map((p) => notifyPatient(p, portalLink)))
+  // Sempre notifica TODOS os pacientes ativos — independente de já terem schedule aberto
+  const allActivePatients = (patients ?? []) as PatientRow[]
+  await Promise.allSettled(allActivePatients.map((p) => notifyPatient(p, portalLink)))
 
   const totalUnlocked = toInsert.length + futureSchedules.length
   return NextResponse.json({
     ok: true,
     unlocked: totalUnlocked,
     already_open: (openSchedules ?? []).length - futureSchedules.length,
-    notified: patientsToNotify.length,
+    notified: allActivePatients.length,
   })
 }

@@ -9,26 +9,15 @@ export function UnlockAllQuestionnairesButton() {
   const [loading, setLoading] = React.useState(false)
 
   async function onClick() {
-    if (!confirm('Liberar o questionário para todos os pacientes ativos agora?')) return
+    if (!confirm('Liberar o questionário para todos os pacientes ativos e enviar notificações agora?')) return
     setLoading(true)
     try {
       const res = await fetch('/api/admin/unlock-all-questionnaires', { method: 'POST' })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Erro')
 
-      const { unlocked, already_open } = json as { unlocked: number; already_open: number }
-      if (unlocked === 0) {
-        toast.info(
-          already_open > 0
-            ? `Todos os ${already_open} paciente(s) ativo(s) já têm questionário em aberto.`
-            : 'Nenhum paciente ativo encontrado.'
-        )
-      } else {
-        toast.success(
-          `Questionário liberado para ${unlocked} paciente(s).` +
-          (already_open > 0 ? ` ${already_open} já tinham acesso.` : '')
-        )
-      }
+      const { notified } = json as { unlocked: number; already_open: number; notified: number }
+      toast.success(`Questionário liberado e notificações enviadas para ${notified} paciente(s).`)
       router.refresh()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro')
@@ -39,7 +28,7 @@ export function UnlockAllQuestionnairesButton() {
 
   return (
     <Button variant="outline" onClick={onClick} disabled={loading}>
-      {loading ? 'Liberando...' : '🔓 Liberar questionário para todos'}
+      {loading ? 'Enviando...' : '🔓 Liberar questionário para todos'}
     </Button>
   )
 }
