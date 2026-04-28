@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatBRL } from '@/lib/utils'
+import { UnlockAllQuestionnairesButton } from '@/components/admin/UnlockAllQuestionnairesButton'
 
 export default async function PatientsPage() {
   const supabase = await createClient()
@@ -13,7 +14,10 @@ export default async function PatientsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Pacientes</h1>
-        <Button asChild><Link href="/patients/new">Novo paciente</Link></Button>
+        <div className="flex items-center gap-2">
+          <UnlockAllQuestionnairesButton />
+          <Button asChild><Link href="/patients/new">Novo paciente</Link></Button>
+        </div>
       </div>
       {error && <p className="text-destructive">{error.message}</p>}
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
