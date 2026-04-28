@@ -55,14 +55,16 @@ export async function POST(request: NextRequest) {
 
   // Marca schedule como completed (trigger cria próximo +15d)
   if (body.schedule_id) {
+    const now = new Date().toISOString()
     const { error: updErr } = await supabase
       .from('questionnaire_schedule')
-      .update({ completed_at: new Date().toISOString() })
+      .update({ status: 'completed', completed_at: now })
       .eq('id', body.schedule_id)
     if (updErr) console.error('Falha ao fechar schedule:', updErr)
   }
 
   revalidatePath('/portal')
   revalidatePath('/questionnaires')
+  revalidatePath('/patients')
   return NextResponse.json({ ok: true, count: rows.length }, { status: 201 })
 }

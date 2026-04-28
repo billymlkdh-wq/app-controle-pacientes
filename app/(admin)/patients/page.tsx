@@ -20,22 +20,41 @@ export default async function PatientsPage() {
       .order('due_date', { ascending: false }),
   ])
 
-  // Keep only the latest schedule per patient
-  const latestByPatient = new Map<string, { status: string; due_date: string }>()
-  for (const s of schedules ?? []) {
-    if (!latestByPatient.has(s.patient_id)) {
-      latestByPatient.set(s.patient_id, { status: s.status, due_date: s.due_date })
-    }
+  // Badge logic per patient:
+  // 1. If any pending/overdue with due_date <= today → "Pendente" (questionário liberado)
+  // 2. Else if most-recent schedule is completed → "Respondeu"
+  // 3. Else → nothing (next questionnaire still in the future)
+  const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+
+  // Group all schedules per patient (already ordered due_date DESC)
+  type Row = { patient_id: string; status: string; due_date: string }
+  const allByPatient = new Map<string, Row[]>()
+  for (const s of (schedules ?? []) as Row[]) {
+    const arr = allByPatient.get(s.patient_id) ?? []
+    arr.push(s)
+    allByPatient.set(s.patient_id, arr)
+  }
+
+  function resolveStatus(patientId: string): 'pending' | 'completed' | null {
+    const rows = allByPatient.get(patientId)
+    if (!rows || rows.length === 0) return null
+    // Check if any open schedule is due now
+    const hasDue = rows.some(
+      (r) => (r.status === 'pending' || r.status === 'overdue') && r.due_date <= today
+    )
+    if (hasDue) return 'pending'
+    // Check if most recent (highest due_date) is completed
+    if (rows[0].status === 'completed') return 'completed'
+    return null
   }
 
   function QuestionnaireBadge({ patientId, active }: { patientId: string; active: boolean }) {
     if (!active) return null
-    const s = latestByPatient.get(patientId)
-    if (!s) return null
-    if (s.status === 'completed') {
+    const s = resolveStatus(patientId)
+    if (s === 'completed') {
       return <Badge variant="success" className="text-[10px] px-1.5 py-0">✓ Respondeu</Badge>
     }
-    if (s.status === 'pending' || s.status === 'overdue') {
+    if (s === 'pending') {
       return <Badge variant="warning" className="text-[10px] px-1.5 py-0">⏳ Pendente</Badge>
     }
     return null
