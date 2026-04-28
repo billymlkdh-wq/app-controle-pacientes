@@ -27,6 +27,16 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     .maybeSingle()
 
   if (existing) {
+    // Se due_date ainda está no futuro, adianta para hoje (desbloqueio imediato)
+    if (existing.due_date > today) {
+      const { error: updErr } = await supabase
+        .from('questionnaire_schedule')
+        .update({ due_date: today })
+        .eq('id', existing.id)
+      if (updErr) return NextResponse.json({ error: updErr.message }, { status: 400 })
+      revalidatePath(`/patients/${id}`)
+      return NextResponse.json({ ok: true, schedule_id: existing.id, due_date: today })
+    }
     return NextResponse.json({
       ok: true,
       already_open: true,

@@ -14,13 +14,15 @@ export async function POST() {
 
   const today = todayBR()
 
-  // Busca IDs de pacientes ativos que JÁ têm questionário em aberto (pending ou overdue)
-  const { data: withOpen } = await supabase
+  // Busca schedules pending/overdue de pacientes ativos
+  const { data: openSchedules } = await supabase
     .from('questionnaire_schedule')
-    .select('patient_id')
+    .select('id, patient_id, due_date')
     .in('status', ['pending', 'overdue'])
 
-  const alreadyOpenIds = new Set((withOpen ?? []).map((r) => r.patient_id))
+  // Schedules com due_date no futuro precisam ser adiantados para hoje
+  const futureSchedules = (openSchedules ?? []).filter((s) => s.due_date > today)
+  const openPatientIds = new Set((openSchedules ?? []).map((r) => r.patient_id))
 
   // Busca todos os pacientes ativos
   const { data: patients, error: pErr } = await supabase
@@ -30,23 +32,33 @@ export async function POST() {
 
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 400 })
 
-  // Filtra quem ainda não tem aberto
-  const toUnlock = (patients ?? []).filter((p) => !alreadyOpenIds.has(p.id))
+  // Pacientes sem nenhum schedule aberto → inserir pending com due_date=hoje
+  const toInsert = (patients ?? []).filter((p) => !openPatientIds.has(p.id))
 
-  if (toUnlock.length === 0) {
-    return NextResponse.json({ ok: true, unlocked: 0, already_open: alreadyOpenIds.size })
+  // Atualiza schedules futuros para due_date=hoje (desbloqueio imediato)
+  if (futureSchedules.length > 0) {
+    const ids = futureSchedules.map((s) => s.id)
+    const { error: updErr } = await supabase
+      .from('questionnaire_schedule')
+      .update({ due_date: today })
+      .in('id', ids)
+    if (updErr) return NextResponse.json({ error: updErr.message }, { status: 400 })
   }
 
-  const rows = toUnlock.map((p) => ({ patient_id: p.id, due_date: today, status: 'pending' }))
-  const { error: insErr } = await supabase.from('questionnaire_schedule').insert(rows)
-  if (insErr) return NextResponse.json({ error: insErr.message }, { status: 400 })
+  // Insere novos schedules para quem não tinha nenhum aberto
+  if (toInsert.length > 0) {
+    const rows = toInsert.map((p) => ({ patient_id: p.id, due_date: today, status: 'pending' }))
+    const { error: insErr } = await supabase.from('questionnaire_schedule').insert(rows)
+    if (insErr) return NextResponse.json({ error: insErr.message }, { status: 400 })
+  }
 
   revalidatePath('/patients')
   revalidatePath('/questionnaires')
 
+  const totalUnlocked = toInsert.length + futureSchedules.length
   return NextResponse.json({
     ok: true,
-    unlocked: toUnlock.length,
-    already_open: alreadyOpenIds.size,
+    unlocked: totalUnlocked,
+    already_open: (openSchedules ?? []).length - futureSchedules.length,
   })
 }
