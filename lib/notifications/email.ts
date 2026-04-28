@@ -1,22 +1,26 @@
-// Email sending via Resend — server-side only
-// Docs: https://resend.com/docs
-// Requires RESEND_API_KEY in env
-// Requires FROM_EMAIL in env (e.g. "Rafael Bolson <noreply@seudominio.com>")
-// If keys are missing, logs warning and skips silently.
+// Email sending via Gmail SMTP (Nodemailer) — server-side only
+// Requires GMAIL_USER=seu@gmail.com and GMAIL_APP_PASSWORD (Google App Password)
+// How to create app password: myaccount.google.com → Security → 2-Step Verification → App passwords
+// Free: up to 500 emails/day
 
-import { Resend } from 'resend'
+import nodemailer from 'nodemailer'
 
-function getClient(): Resend | null {
-  const key = process.env.RESEND_API_KEY
-  if (!key) {
-    console.warn('[email] RESEND_API_KEY not set — email skipped')
+function getTransport() {
+  const user = process.env.GMAIL_USER
+  const pass = process.env.GMAIL_APP_PASSWORD
+  if (!user || !pass) {
+    console.warn('[email] GMAIL_USER / GMAIL_APP_PASSWORD not set — email skipped')
     return null
   }
-  return new Resend(key)
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+  })
 }
 
 function fromAddress(): string {
-  return process.env.FROM_EMAIL ?? 'Rafael Bolson <noreply@rafaelbolson.com.br>'
+  const user = process.env.GMAIL_USER ?? ''
+  return `Rafael Bolson <${user}>`
 }
 
 export type SendEmailResult = { ok: boolean; id?: string; error?: string }
@@ -30,13 +34,13 @@ export async function sendQuestionnaireUnlockedEmail({
   name: string
   portalLink: string
 }): Promise<SendEmailResult> {
-  const resend = getClient()
-  if (!resend) return { ok: false, error: 'RESEND_API_KEY not set' }
+  const transport = getTransport()
+  if (!transport) return { ok: false, error: 'GMAIL_USER / GMAIL_APP_PASSWORD not set' }
 
   const firstName = name.split(/\s+/)[0] || name
 
   try {
-    const { data, error } = await resend.emails.send({
+    const info = await transport.sendMail({
       from: fromAddress(),
       to,
       subject: '📋 Seu questionário quinzenal está disponível!',
@@ -60,9 +64,7 @@ export async function sendQuestionnaireUnlockedEmail({
         </div>
       `,
     })
-
-    if (error) return { ok: false, error: error.message }
-    return { ok: true, id: data?.id }
+    return { ok: true, id: info.messageId }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'erro' }
   }
