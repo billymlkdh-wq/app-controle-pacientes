@@ -9,6 +9,21 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { createClient } from '@/lib/supabase/client'
 
+// Maps Google Drive file IDs → local public assets (Drive URLs are unreliable)
+const DRIVE_IMAGE_MAP: Record<string, string> = {
+  '1QJkJF86LxfDl3JhNK8xvK80G5-Fpik7sJQXsVPUMrPsp_Bo': '/bristol-scale.svg',   // Bristol Scale
+  '1Jzd0U2DnAmjEu0ztGDeYEVnn5hsqurL3vdkVCbvJ0ciYKSY': '/trajes-foto.svg',     // Trajes para avaliação física
+}
+
+function resolveImageUrl(url: string): string {
+  const match = url.match(/\/d\/([\w-]+)/)
+  if (match) {
+    const local = DRIVE_IMAGE_MAP[match[1]]
+    if (local) return local
+  }
+  return url
+}
+
 type ScaleOptions = { min: number; max: number; minLabel: string; maxLabel: string }
 
 type Question = {
@@ -244,12 +259,7 @@ export function QuestionnaireForm({
             {q.image_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={
-                  // Replace Google Drive links (unreliable) with local SVG for Bristol Scale question
-                  q.image_url.includes('googleusercontent') || q.image_url.includes('drive.google')
-                    ? '/bristol-scale.svg'
-                    : q.image_url
-                }
+                src={resolveImageUrl(q.image_url)}
                 alt="Imagem ilustrativa"
                 className="w-full rounded-md object-contain max-h-72"
                 loading="lazy"

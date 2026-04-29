@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 500" font-family="sans-serif">
+  <!-- Background -->
+  <rect width="700" height="500" fill="#2a2d35"/>
+
+  <!-- Title -->
+  <text x="350" y="58" text-anchor="middle" font-size="28" font-weight="700" fill="#c9a84c">Trajes adequados</text>
+  <text x="350" y="90" text-anchor="middle" font-size="28" font-weight="700" fill="#c9a84c">para a foto</text>
+
+  <!-- Divider vertical line -->
+  <line x1="350" y1="120" x2="350" y2="480" stroke="#c9a84c" stroke-width="1.5" opacity="0.7"/>
+
+  <!-- ── LEFT: Homem ── -->
+  <text x="175" y="145" text-anchor="middle" font-size="26" font-weight="700" fill="#c9a84c">Homem</text>
+  <text x="175" y="172" text-anchor="middle" font-size="15" fill="#e0e0e0">cueca ou sunga</text>
+  <text x="175" y="192" text-anchor="middle" font-size="15" fill="#e0e0e0">shorts de esporte</text>
+
+  <!-- Icon: Shorts (left) -->
+  <g transform="translate(58, 220)">
+    <!-- waistband -->
+    <rect x="0" y="0" width="100" height="18" rx="4" fill="white"/>
+    <!-- left leg -->
+    <path d="M0 18 L10 90 L46 90 L50 18 Z" fill="white"/>
+    <!-- right leg -->
+    <path d="M100 18 L90 90 L54 90 L50 18 Z" fill="white"/>
+  </g>
+
+  <!-- Icon: Cueca/Sunga (right) -->
+  <g transform="translate(185, 228)">
+    <!-- waistband -->
+    <rect x="0" y="0" width="85" height="14" rx="3" fill="white"/>
+    <!-- brief body -->
+    <path d="M0 14 Q10 55 42 62 Q74 55 85 14 Z" fill="white"/>
+    <!-- center seam -->
+    <path d="M42 62 L42 20" stroke="#2a2d35" stroke-width="2" fill="none"/>
+  </g>
+
+  <!-- ── RIGHT: Mulher ── -->
+  <text x="525" y="145" text-anchor="middle" font-size="26" font-weight="700" fill="#c9a84c">Mulher</text>
+  <text x="525" y="172" text-anchor="middle" font-size="15" fill="#e0e0e0">biquíni ou top</text>
+  <text x="525" y="192" text-anchor="middle" font-size="15" fill="#e0e0e0">biquíni ou shorts curto</text>
+
+  <!-- Icon: Bikini top (top-left of right side) -->
+  <g transform="translate(375, 218)">
+    <!-- left cup -->
+    <path d="M0 35 Q0 0 35 8 Q42 25 42 40 Q20 50 0 35 Z" fill="white"/>
+    <!-- right cup -->
+    <path d="M84 35 Q84 0 49 8 Q42 25 42 40 Q64 50 84 35 Z" fill="white"/>
+    <!-- center tie -->
+    <ellipse cx="42" cy="10" rx="5" ry="8" fill="white"/>
+    <!-- straps -->
+    <line x1="42" y1="2" x2="16" y2="0" stroke="white" stroke-width="4" stroke-linecap="round"/>
+    <line x1="42" y1="2" x2="68" y2="0" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  </g>
+
+  <!-- Icon: Bikini bottom (bottom-left of right side) -->
+  <g transform="translate(375, 310)">
+    <!-- waist band -->
+    <path d="M10 8 Q42 0 74 8" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <!-- sides -->
+    <line x1="10" y1="8" x2="5" y2="25" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <line x1="74" y1="8" x2="79" y2="25" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <!-- bottom triangle -->
+    <path d="M5 25 Q42 65 79 25 Q65 30 42 32 Q19 30 5 25 Z" fill="white"/>
+  </g>
+
+  <!-- Icon: Top (sports bra, top-right of right side) -->
+  <g transform="translate(490, 218)">
+    <!-- left cup -->
+    <path d="M0 35 Q0 0 35 8 Q42 25 42 40 Q20 50 0 35 Z" fill="white"/>
+    <!-- right cup -->
+    <path d="M84 35 Q84 0 49 8 Q42 25 42 40 Q64 50 84 35 Z" fill="white"/>
+    <!-- band -->
+    <rect x="0" y="35" width="84" height="14" rx="3" fill="white"/>
+    <!-- straps -->
+    <line x1="15" y1="35" x2="15" y2="0" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <line x1="69" y1="35" x2="69" y2="0" stroke="white" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- Icon: Shorts curto (bottom-right of right side) -->
+  <g transform="translate(490, 315)">
+    <!-- waistband -->
+    <rect x="0" y="0" width="84" height="14" rx="3" fill="white"/>
+    <!-- left leg short -->
+    <path d="M0 14 L8 65 L38 65 L42 14 Z" fill="white"/>
+    <!-- right leg short -->
+    <path d="M84 14 L76 65 L46 65 L42 14 Z" fill="white"/>
+  </g>
+</svg>
