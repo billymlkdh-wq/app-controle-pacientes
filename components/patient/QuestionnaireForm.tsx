@@ -244,7 +244,12 @@ export function QuestionnaireForm({
             {q.image_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={q.image_url}
+                src={
+                  // Replace Google Drive links (unreliable) with local SVG for Bristol Scale question
+                  q.image_url.includes('googleusercontent') || q.image_url.includes('drive.google')
+                    ? '/bristol-scale.svg'
+                    : q.image_url
+                }
                 alt="Imagem ilustrativa"
                 className="w-full rounded-md object-contain max-h-72"
                 loading="lazy"

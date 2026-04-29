@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" font-family="sans-serif">
+  <!-- Background -->
+  <rect width="900" height="420" fill="#f5f0e8"/>
+
+  <!-- Title -->
+  <text x="450" y="42" text-anchor="middle" font-size="30" font-weight="900" fill="#1a1a2e" letter-spacing="1">Escala de Bristol</text>
+
+  <!-- Cards: each 110px wide, 280px tall, starting x=20, gap=10 -->
+
+  <!-- TYPE 1 -->
+  <g transform="translate(20,60)">
+    <rect width="108" height="230" rx="14" fill="#f0ebe0" stroke="#d4c9b0" stroke-width="1.5"/>
+    <!-- balls -->
+    <circle cx="54" cy="42" r="13" fill="#5a2d0c"/>
+    <circle cx="33" cy="70" r="13" fill="#5a2d0c"/>
+    <circle cx="75" cy="70" r="13" fill="#5a2d0c"/>
+    <circle cx="54" cy="98" r="13" fill="#5a2d0c"/>
+    <circle cx="33" cy="126" r="13" fill="#5a2d0c"/>
+    <circle cx="75" cy="126" r="13" fill="#5a2d0c"/>
+    <!-- label -->
+    <text x="54" y="162" text-anchor="middle" font-size="10.5" fill="#3d2000" font-weight="600">Pequenas</text>
+    <text x="54" y="175" text-anchor="middle" font-size="10.5" fill="#3d2000" font-weight="600">bolinhas</text>
+    <text x="54" y="188" text-anchor="middle" font-size="10.5" fill="#3d2000" font-weight="600">duras</text>
+    <text x="54" y="202" text-anchor="middle" font-size="9.5" fill="#7a5c3a">(difícil para sair)</text>
+    <text x="54" y="222" text-anchor="middle" font-size="20" font-weight="900" fill="#8B6914">1</text>
+  </g>
+
+  <!-- TYPE 2 -->
+  <g transform="translate(138,60)">
+    <rect width="108" height="230" rx="14" fill="#f0ebe0" stroke="#d4c9b0" stroke-width="1.5"/>
+    <!-- lumpy sausage -->
+    <ellipse cx="54" cy="88" rx="24" ry="70" fill="#6b3010"/>
+    <circle cx="44" cy="38" r="14" fill="#7a3812"/>
+    <circle cx="64" cy="48" r="13" fill="#7a3812"/>
+    <circle cx="42" cy="72" r="13" fill="#7a3812"/>
+    <circle cx="65" cy="82" r="13" fill="#7a3812"/>
+    <circle cx="44" cy="108" r="13" fill="#7a3812"/>
+    <circle cx="64" cy="122" r="13" fill="#7a3812"/>
+    <circle cx="50" cy="148" r="11" fill="#7a3812"/>
+    <!-- label -->
+    <text x="54" y="168" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">Forma de linguiça</text>
+    <text x="54" y="181" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">encaroçada, com</text>
+    <text x="54" y="194" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">pequenas bolinhas</text>
+    <text x="54" y="207" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">grudadas</text>
+    <text x="54" y="222" text-anchor="middle" font-size="20" font-weight="900" fill="#8B6914">2</text>
+  </g>
+
+  <!-- TYPE 3 -->
+  <g transform="translate(256,60)">
+    <rect width="108" height="230" rx="14" fill="#f0ebe0" stroke="#d4c9b0" stroke-width="1.5"/>
+    <!-- sausage with cracks -->
+    <ellipse cx="54" cy="88" rx="28" ry="74" fill="#5a2d0c"/>
+    <ellipse cx="54" cy="88" rx="26" ry="72" fill="#6b3a14"/>
+    <!-- crack lines -->
+    <path d="M38 50 Q54 58 68 52" stroke="#3d1a05" stroke-width="2.5" fill="none"/>
+    <path d="M36 72 Q52 80 70 74" stroke="#3d1a05" stroke-width="2.5" fill="none"/>
+    <path d="M40 95 Q56 103 68 97" stroke="#3d1a05" stroke-width="2.5" fill="none"/>
+    <path d="M38 116 Q54 124 66 118" stroke="#3d1a05" stroke-width="2.5" fill="none"/>
+    <path d="M42 136 Q54 142 66 137" stroke="#3d1a05" stroke-width="2.5" fill="none"/>
+    <!-- label -->
+    <text x="54" y="172" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">Forma de linguiça</text>
+    <text x="54" y="185" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">com rachaduras</text>
+    <text x="54" y="198" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">na superfície</text>
+    <text x="54" y="222" text-anchor="middle" font-size="20" font-weight="900" fill="#8B6914">3</text>
+  </g>
+
+  <!-- TYPE 4 -->
+  <g transform="translate(374,60)">
+    <rect width="108" height="230" rx="14" fill="#f0ebe0" stroke="#d4c9b0" stroke-width="1.5"/>
+    <!-- smooth sausage / banana shape -->
+    <path d="M54 22 C78 30 82 80 78 120 C74 150 60 165 54 165 C48 165 34 150 30 120 C26 80 30 30 54 22 Z" fill="#7a3010"/>
+    <path d="M54 26 C74 34 78 80 74 118 C70 146 58 160 54 160 C50 160 38 146 34 118 C30 80 34 34 54 26 Z" fill="#8B4018" opacity="0.6"/>
+    <!-- label -->
+    <text x="54" y="178" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">Alongada com</text>
+    <text x="54" y="191" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">formato de</text>
+    <text x="54" y="204" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">salsicha</text>
+    <text x="54" y="222" text-anchor="middle" font-size="20" font-weight="900" fill="#8B6914">4</text>
+  </g>
+
+  <!-- TYPE 5 -->
+  <g transform="translate(492,60)">
+    <rect width="108" height="230" rx="14" fill="#f0ebe0" stroke="#d4c9b0" stroke-width="1.5"/>
+    <!-- soft blobs -->
+    <ellipse cx="40" cy="55" rx="20" ry="15" fill="#8B4515"/>
+    <ellipse cx="68" cy="62" rx="18" ry="14" fill="#8B4515"/>
+    <ellipse cx="35" cy="90" rx="22" ry="14" fill="#8B4515"/>
+    <ellipse cx="70" cy="96" rx="19" ry="13" fill="#8B4515"/>
+    <ellipse cx="42" cy="125" rx="20" ry="14" fill="#8B4515"/>
+    <ellipse cx="68" cy="130" rx="17" ry="12" fill="#8B4515"/>
+    <!-- label -->
+    <text x="54" y="158" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">Pedaços macios</text>
+    <text x="54" y="171" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">e separados, com</text>
+    <text x="54" y="184" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">bordas bem</text>
+    <text x="54" y="197" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">definidas</text>
+    <text x="54" y="210" text-anchor="middle" font-size="9" fill="#7a5c3a">(fáceis de sair)</text>
+    <text x="54" y="222" text-anchor="middle" font-size="20" font-weight="900" fill="#8B6914">5</text>
+  </g>
+
+  <!-- TYPE 6 -->
+  <g transform="translate(610,60)">
+    <rect width="108" height="230" rx="14" fill="#f0ebe0" stroke="#d4c9b0" stroke-width="1.5"/>
+    <!-- fluffy ragged mass -->
+    <path d="M54 30 Q65 28 70 38 Q80 35 82 48 Q88 52 84 62 Q90 68 86 78 Q90 86 84 94 Q88 104 80 110 Q82 120 72 124 Q70 136 60 138 Q54 148 48 138 Q38 136 36 124 Q26 120 28 110 Q20 104 24 94 Q18 86 22 78 Q18 68 24 62 Q20 52 26 48 Q28 35 38 38 Q43 28 54 30 Z" fill="#9B5820"/>
+    <!-- ragged texture lines -->
+    <path d="M35 55 Q50 48 65 58" stroke="#6b3810" stroke-width="1.5" fill="none"/>
+    <path d="M30 75 Q48 68 70 78" stroke="#6b3810" stroke-width="1.5" fill="none"/>
+    <path d="M32 95 Q50 88 72 98" stroke="#6b3810" stroke-width="1.5" fill="none"/>
+    <path d="M36 115 Q52 108 70 118" stroke="#6b3810" stroke-width="1.5" fill="none"/>
+    <!-- label -->
+    <text x="54" y="158" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">Massa pastosa</text>
+    <text x="54" y="171" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">e fofa, com</text>
+    <text x="54" y="184" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">bordas irregulares</text>
+    <text x="54" y="222" text-anchor="middle" font-size="20" font-weight="900" fill="#8B6914">6</text>
+  </g>
+
+  <!-- TYPE 7 -->
+  <g transform="translate(728,60)">
+    <rect width="108" height="230" rx="14" fill="#f0ebe0" stroke="#d4c9b0" stroke-width="1.5"/>
+    <!-- liquid blob -->
+    <path d="M30 80 Q26 60 40 50 Q54 28 68 50 Q82 55 84 75 Q90 95 78 112 Q70 130 54 135 Q38 130 28 114 Q22 100 30 80 Z" fill="#c8924a"/>
+    <path d="M36 84 Q33 68 44 58 Q54 38 64 58 Q74 62 76 80 Q80 96 70 108 Q62 120 54 122 Q44 120 36 108 Q30 96 36 84 Z" fill="#d4a055" opacity="0.5"/>
+    <!-- label -->
+    <text x="54" y="155" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">Totalmente</text>
+    <text x="54" y="168" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">líquida, sem</text>
+    <text x="54" y="181" text-anchor="middle" font-size="10" fill="#3d2000" font-weight="600">pedaços sólidos</text>
+    <text x="54" y="222" text-anchor="middle" font-size="20" font-weight="900" fill="#8B6914">7</text>
+  </g>
+</svg>
