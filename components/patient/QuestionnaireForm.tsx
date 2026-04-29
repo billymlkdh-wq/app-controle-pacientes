@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 const DRIVE_IMAGE_MAP: Record<string, string> = {
   '1QJkJF86LxfDl3JhNK8xvK80G5-Fpik7sJQXsVPUMrPsp_Bo': '/bristol-scale.svg',   // Bristol Scale
   '1Jzd0U2DnAmjEu0ztGDeYEVnn5hsqurL3vdkVCbvJ0ciYKSY': '/trajes-foto.svg',     // Trajes para avaliação física
+  '1crFy7vESwuTRYxkCH54OFGZFj9AffMAV4Rwl3gWg7ked_Pk': '/instrucoes-peso.svg', // Instruções para medir peso
 }
 
 function resolveImageUrl(url: string): string {

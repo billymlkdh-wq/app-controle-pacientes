@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 420" font-family="sans-serif">
+  <!-- Background -->
+  <rect width="700" height="420" fill="#2a2d35"/>
+
+  <!-- Title -->
+  <text x="350" y="52" text-anchor="middle" font-size="28" font-weight="700" fill="#c9a84c">Instruções para medir</text>
+  <text x="350" y="84" text-anchor="middle" font-size="28" font-weight="700" fill="#c9a84c">peso corporal</text>
+
+  <!-- Item 1 -->
+  <text x="60" y="135" font-size="26" font-weight="700" fill="#c9a84c">1.</text>
+  <text x="98" y="135" font-size="18" fill="#e8e8e8">Use sempre a mesma balança, no mesmo horário.</text>
+
+  <!-- Item 2 -->
+  <text x="60" y="185" font-size="26" font-weight="700" fill="#c9a84c">2.</text>
+  <text x="98" y="185" font-size="18" fill="#e8e8e8">Esteja vestindo o mesmo tipo de roupa e descalço.</text>
+
+  <!-- Item 3 -->
+  <text x="60" y="235" font-size="26" font-weight="700" fill="#c9a84c">3.</text>
+  <text x="98" y="235" font-size="18" fill="#e8e8e8">Não se esqueça de tirar celulares, chaves e</text>
+  <text x="98" y="260" font-size="18" fill="#e8e8e8">quaisquer objetos dos bolsos.</text>
+
+  <!-- Item 4 -->
+  <text x="60" y="310" font-size="26" font-weight="700" fill="#c9a84c">4.</text>
+  <text x="98" y="310" font-size="18" fill="#e8e8e8">Suba na balança, espere o peso estabilizar</text>
+  <text x="98" y="335" font-size="18" fill="#e8e8e8">e anote o valor.</text>
+</svg>
