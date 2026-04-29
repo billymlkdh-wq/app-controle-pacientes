@@ -1,4 +1,5 @@
 // Evolução do próprio paciente — gráfico multi-série
+export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { QuestionnaireEvolutionChart } from '@/components/admin/QuestionnaireEvolutionChart'

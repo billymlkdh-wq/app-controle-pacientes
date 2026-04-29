@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
   }
 
   revalidatePath('/portal')
+  revalidatePath('/progress')
   revalidatePath('/questionnaires')
   revalidatePath('/patients')
   return NextResponse.json({ ok: true, count: rows.length }, { status: 201 })

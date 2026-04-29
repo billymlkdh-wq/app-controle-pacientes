@@ -210,8 +210,8 @@ export function QuestionnaireForm({
     setLoading(false)
     if (!res.ok) { toast.error('Falha ao enviar'); return }
     toast.success('Respostas enviadas! Obrigado.')
-    router.push('/portal')
-    router.refresh()
+    // Full navigation to bust Next.js Router Cache — ensures portal re-fetches fresh schedule data
+    window.location.href = '/portal'
   }
 
   // Track display order num (sections don't count)
