@@ -21,10 +21,12 @@ export default async function PatientsPage() {
   ])
 
   // Badge logic per patient:
-  // 1. If any pending/overdue with due_date <= today → "Pendente" (questionário liberado)
-  // 2. Else if most-recent schedule is completed → "Respondeu"
-  // 3. Else → nothing (next questionnaire still in the future)
+  // "Pendente"  → open schedule with due_date in [today-2, today] (2-day notification window)
+  // "Respondeu" → has a completed schedule AND no expired-unanswered schedule more recent
+  // null        → future schedule not yet due, or open schedule past 2-day window (no badge)
   const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+  const d = new Date(); d.setDate(d.getDate() - 2)
+  const windowStart = d.toISOString().slice(0, 10) // today - 2 days
 
   // Group all schedules per patient (already ordered due_date DESC)
   type Row = { patient_id: string; status: string; due_date: string }
@@ -38,13 +40,27 @@ export default async function PatientsPage() {
   function resolveStatus(patientId: string): 'pending' | 'completed' | null {
     const rows = allByPatient.get(patientId)
     if (!rows || rows.length === 0) return null
-    // Check if any open schedule is due now
-    const hasDue = rows.some(
-      (r) => (r.status === 'pending' || r.status === 'overdue') && r.due_date <= today
+
+    // Open (unanswered) schedule due within the 2-day window → "Pendente"
+    const inWindow = rows.some(
+      (r) =>
+        (r.status === 'pending' || r.status === 'overdue') &&
+        r.due_date <= today &&
+        r.due_date >= windowStart,
     )
-    if (hasDue) return 'pending'
-    // Check if most recent (highest due_date) is completed
-    if (rows[0].status === 'completed') return 'completed'
+    if (inWindow) return 'pending'
+
+    // Open schedule past the 2-day window (unanswered, expired) — no badge
+    const hasExpiredOpen = rows.some(
+      (r) =>
+        (r.status === 'pending' || r.status === 'overdue') &&
+        r.due_date < windowStart,
+    )
+
+    // Has at least one completed schedule and no expired-unanswered one → "Respondeu"
+    const hasCompleted = rows.some((r) => r.status === 'completed')
+    if (hasCompleted && !hasExpiredOpen) return 'completed'
+
     return null
   }
 
