@@ -44,14 +44,27 @@ export async function POST(request: NextRequest) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin
   const portalLink = `${siteUrl}/questionnaire`
 
+  // Patients who responded within last 15 days — skip them (their cycle runs naturally via trigger)
+  const d15 = new Date(); d15.setDate(d15.getDate() - 15)
+  const { data: recentResponses } = await supabase
+    .from('questionnaire_responses')
+    .select('patient_id')
+    .gte('created_at', d15.toISOString())
+  const recentlyAnswered = new Set(
+    (recentResponses ?? []).map((r: { patient_id: string }) => r.patient_id),
+  )
+
   // Busca schedules pending/overdue de pacientes ativos
   const { data: openSchedules } = await supabase
     .from('questionnaire_schedule')
     .select('id, patient_id, due_date')
     .in('status', ['pending', 'overdue'])
 
-  // Schedules com due_date no futuro precisam ser adiantados para hoje
-  const futureSchedules = (openSchedules ?? []).filter((s) => s.due_date > today)
+  // Future schedules to reset → only for patients who haven't answered recently
+  // (preserves natural next-cycle schedules created by the trigger after answering)
+  const futureSchedulesToReset = (openSchedules ?? []).filter(
+    (s) => s.due_date > today && !recentlyAnswered.has(s.patient_id),
+  )
   const openPatientIds = new Set((openSchedules ?? []).map((r) => r.patient_id))
 
   // Busca todos os pacientes ativos com dados de contato
@@ -62,14 +75,14 @@ export async function POST(request: NextRequest) {
 
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 400 })
 
-  const patientMap = new Map<string, PatientRow>((patients ?? []).map((p) => [p.id, p]))
+  // Patients with no open schedule AND who haven't answered recently → create pending for today
+  const toInsert = (patients ?? []).filter(
+    (p) => !openPatientIds.has(p.id) && !recentlyAnswered.has(p.id),
+  )
 
-  // Pacientes sem nenhum schedule aberto → inserir pending com due_date=hoje
-  const toInsert = (patients ?? []).filter((p) => !openPatientIds.has(p.id))
-
-  // Atualiza schedules futuros para due_date=hoje (desbloqueio imediato)
-  if (futureSchedules.length > 0) {
-    const ids = futureSchedules.map((s) => s.id)
+  // Reset future schedules to today (only for patients not recently answered)
+  if (futureSchedulesToReset.length > 0) {
+    const ids = futureSchedulesToReset.map((s) => s.id)
     const { error: updErr } = await supabase
       .from('questionnaire_schedule')
       .update({ due_date: today })

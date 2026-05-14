@@ -10,64 +10,58 @@ import { UnlockAllQuestionnairesButton } from '@/components/admin/UnlockAllQuest
 export default async function PatientsPage() {
   const supabase = await createClient()
 
-  const [{ data: patients, error }, { data: schedules }] = await Promise.all([
+  const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+  // 2-day notification window
+  const d2 = new Date(); d2.setDate(d2.getDate() - 2)
+  const windowStart = d2.toISOString().slice(0, 10)
+  // 16-day lookback for "Respondeu" (one cycle + buffer)
+  const d16 = new Date(); d16.setDate(d16.getDate() - 16)
+  const respondedSince = d16.toISOString()
+
+  const [
+    { data: patients, error },
+    { data: schedules },
+    { data: recentResponses },
+  ] = await Promise.all([
     supabase.from('patients').select('*').order('name'),
-    // Latest schedule per patient — only care about current open or most-recently-completed
+
+    // Open schedules in the 2-day window — drives "Pendente" badge
     supabase
       .from('questionnaire_schedule')
-      .select('patient_id, status, due_date, completed_at')
-      .in('status', ['pending', 'overdue', 'completed'])
-      .order('due_date', { ascending: false }),
+      .select('patient_id, due_date')
+      .in('status', ['pending', 'overdue'])
+      .lte('due_date', today)
+      .gte('due_date', windowStart),
+
+    // Most recent responses per patient within last 16 days — drives "Respondeu" badge
+    supabase
+      .from('questionnaire_responses')
+      .select('patient_id, created_at')
+      .gte('created_at', respondedSince)
+      .order('created_at', { ascending: false }),
   ])
 
-  // Badge logic per patient:
-  // "Pendente"  → open schedule with due_date in [today-2, today] (2-day notification window)
-  // "Respondeu" → has a completed schedule AND no expired-unanswered schedule more recent
-  // null        → future schedule not yet due, or open schedule past 2-day window (no badge)
-  const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
-  const d = new Date(); d.setDate(d.getDate() - 2)
-  const windowStart = d.toISOString().slice(0, 10) // today - 2 days
+  // Set of patient_ids with an open schedule in the 2-day window
+  const pendingPatients = new Set(
+    (schedules ?? []).map((s: { patient_id: string }) => s.patient_id),
+  )
 
-  // Group all schedules per patient (already ordered due_date DESC)
-  type Row = { patient_id: string; status: string; due_date: string }
-  const allByPatient = new Map<string, Row[]>()
-  for (const s of (schedules ?? []) as Row[]) {
-    const arr = allByPatient.get(s.patient_id) ?? []
-    arr.push(s)
-    allByPatient.set(s.patient_id, arr)
+  // Map of patient_id → most recent response date (within last 16 days)
+  const lastResponseByPatient = new Map<string, string>()
+  for (const r of (recentResponses ?? []) as Array<{ patient_id: string; created_at: string }>) {
+    if (!lastResponseByPatient.has(r.patient_id)) {
+      lastResponseByPatient.set(r.patient_id, r.created_at)
+    }
   }
 
   function resolveStatus(patientId: string): 'pending' | 'completed' | null {
-    const rows = allByPatient.get(patientId)
-    if (!rows || rows.length === 0) return null
-
-    // Open (unanswered) schedule due within the 2-day window → "Pendente"
-    const inWindow = rows.some(
-      (r) =>
-        (r.status === 'pending' || r.status === 'overdue') &&
-        r.due_date <= today &&
-        r.due_date >= windowStart,
-    )
-    if (inWindow) return 'pending'
-
-    // Most recent completed schedule (rows ordered due_date DESC, so first match = most recent)
-    const latestCompleted = rows.find((r) => r.status === 'completed')
-    if (!latestCompleted) return null
-
-    // Most recent expired open schedule (past 2-day window, unanswered)
-    const latestExpiredOpen = rows.find(
-      (r) =>
-        (r.status === 'pending' || r.status === 'overdue') &&
-        r.due_date < windowStart,
-    )
-
-    // "Respondeu" if patient answered after (or there is no) expired open schedule
-    // i.e. completed.due_date > expiredOpen.due_date means they answered the most recent cycle
-    if (!latestExpiredOpen || latestCompleted.due_date > latestExpiredOpen.due_date) {
-      return 'completed'
+    // "Pendente": open schedule due within last 2 days, patient hasn't answered it yet
+    if (pendingPatients.has(patientId)) {
+      // If they also responded recently, don't show Pendente (they already answered this cycle)
+      if (!lastResponseByPatient.has(patientId)) return 'pending'
     }
-
-    // Expired open is MORE RECENT than last completion → unanswered cycle, no badge
+    // "Respondeu": has a response within the last 16 days
+    if (lastResponseByPatient.has(patientId)) return 'completed'
     return null
   }
 
