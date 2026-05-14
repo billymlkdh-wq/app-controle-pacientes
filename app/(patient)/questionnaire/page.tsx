@@ -29,16 +29,30 @@ export default async function QuestionnairePage() {
     .maybeSingle()
 
   const today = todayBR()
-  const isLocked = schedule ? schedule.due_date > today : true
+  // 2-day window: due_date must be in [today-2, today] to allow answering
+  const d2 = new Date(); d2.setDate(d2.getDate() - 2)
+  const windowStart = d2.toISOString().slice(0, 10)
 
-  // Se está bloqueado (ou sem schedule), mostra aviso com próxima data
+  const isFuture  = schedule ? schedule.due_date > today : false
+  const isExpired = schedule ? schedule.due_date < windowStart : false
+  const isLocked  = !schedule || isFuture || isExpired
+
+  // Se está bloqueado (ou sem schedule), mostra aviso
   if (isLocked) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <Card>
           <CardHeader><CardTitle>Questionário quinzenal</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            {schedule ? (
+            {isExpired && schedule ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  O prazo para responder este questionário expirou (venceu em{' '}
+                  <strong>{formatDateBR(schedule.due_date)}</strong>). O próximo será liberado em breve pelo seu nutricionista.
+                </p>
+                <Button asChild variant="outline"><Link href="/portal">Voltar</Link></Button>
+              </>
+            ) : schedule ? (
               <>
                 <p className="text-sm text-muted-foreground">
                   Você já respondeu seu último questionário. Obrigado!

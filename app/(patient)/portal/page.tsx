@@ -25,10 +25,14 @@ export default async function PortalHome() {
     : { data: null }
 
   const today = todayBR()
+  const d2 = new Date(); d2.setDate(d2.getDate() - 2)
+  const windowStart = d2.toISOString().slice(0, 10)
   const overdue = schedule ? isOverdue(schedule.due_date) : false
   const days = schedule ? daysUntilDue(schedule.due_date) : null
-  // "Bloqueado" = existe schedule mas data ainda não chegou (paciente acabou de responder)
-  const locked = !!schedule && schedule.due_date > today
+  // locked = future (not released yet)
+  const locked   = !!schedule && schedule.due_date > today
+  // expired = past the 2-day answer window, access blocked
+  const expired  = !!schedule && schedule.due_date < windowStart
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -41,14 +45,24 @@ export default async function PortalHome() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Próximo questionário</span>
-            {schedule && <Badge variant={overdue ? 'destructive' : locked ? 'secondary' : days !== null && days <= 2 ? 'warning' : 'secondary'}>
-              {overdue ? 'Atrasado' : locked ? 'Bloqueado' : days === 0 ? 'Hoje' : days !== null && days > 0 ? `Em ${days} dias` : '-'}
-            </Badge>}
+            {schedule && (
+              <Badge variant={expired ? 'destructive' : overdue ? 'destructive' : locked ? 'secondary' : days !== null && days <= 2 ? 'warning' : 'secondary'}>
+                {expired ? 'Expirado' : overdue ? 'Atrasado' : locked ? 'Bloqueado' : days === 0 ? 'Hoje' : days !== null && days > 0 ? `Em ${days} dias` : '-'}
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {schedule ? (
-            locked ? (
+            expired ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  O prazo para responder este questionário expirou (venceu em{' '}
+                  <strong>{formatDateBR(schedule.due_date)}</strong>). O próximo será liberado em breve pelo seu nutricionista.
+                </p>
+                <Button disabled variant="outline">Prazo expirado</Button>
+              </>
+            ) : locked ? (
               <>
                 <p className="text-sm text-muted-foreground">
                   Você já respondeu. Seu próximo questionário será liberado em <strong>{formatDateBR(schedule.due_date)}</strong> ({days === 1 ? '1 dia' : `${days} dias`}).
