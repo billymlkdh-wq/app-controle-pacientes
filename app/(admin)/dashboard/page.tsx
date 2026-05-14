@@ -48,14 +48,22 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase.from('patients').select('id', { count: 'exact', head: true }).eq('active', true),
     supabase.from('payments').select('amount').eq('status', 'pago').gte('date', firstOfMonth),
-    supabase.from('questionnaire_schedule').select('id', { count: 'exact', head: true }).eq('status', 'overdue'),
+    // Overdue = open schedules past the 2-day notification window (unanswered and expired)
+    supabase
+      .from('questionnaire_schedule')
+      .select('id', { count: 'exact', head: true })
+      .in('status', ['pending', 'overdue'])
+      .is('completed_at', null)
+      .lt('due_date', new Date(today.getTime() - 2 * 864e5).toISOString().slice(0, 10)),
     supabase.from('payments').select('id', { count: 'exact', head: true }).eq('status', 'atrasado'),
+    // "Faltam responder" = distinct patients with open schedule in 2-day window (not yet answered)
     supabase
       .from('questionnaire_schedule')
       .select('patient_id')
       .in('status', ['pending', 'overdue'])
       .is('completed_at', null)
-      .lte('due_date', todayISO),
+      .lte('due_date', todayISO)
+      .gte('due_date', new Date(today.getTime() - 2 * 864e5).toISOString().slice(0, 10)),
     supabase.from('payments').select('amount, date').eq('status', 'pago').gte('date', start12mISO),
     supabase.from('patients').select('id, created_at, active, updated_at'),
     // Todos os contratos para Planos por Status

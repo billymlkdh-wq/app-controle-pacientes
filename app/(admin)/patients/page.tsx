@@ -50,17 +50,24 @@ export default async function PatientsPage() {
     )
     if (inWindow) return 'pending'
 
-    // Open schedule past the 2-day window (unanswered, expired) — no badge
-    const hasExpiredOpen = rows.some(
+    // Most recent completed schedule (rows ordered due_date DESC, so first match = most recent)
+    const latestCompleted = rows.find((r) => r.status === 'completed')
+    if (!latestCompleted) return null
+
+    // Most recent expired open schedule (past 2-day window, unanswered)
+    const latestExpiredOpen = rows.find(
       (r) =>
         (r.status === 'pending' || r.status === 'overdue') &&
         r.due_date < windowStart,
     )
 
-    // Has at least one completed schedule and no expired-unanswered one → "Respondeu"
-    const hasCompleted = rows.some((r) => r.status === 'completed')
-    if (hasCompleted && !hasExpiredOpen) return 'completed'
+    // "Respondeu" if patient answered after (or there is no) expired open schedule
+    // i.e. completed.due_date > expiredOpen.due_date means they answered the most recent cycle
+    if (!latestExpiredOpen || latestCompleted.due_date > latestExpiredOpen.due_date) {
+      return 'completed'
+    }
 
+    // Expired open is MORE RECENT than last completion → unanswered cycle, no badge
     return null
   }
 

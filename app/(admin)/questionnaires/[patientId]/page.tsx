@@ -87,10 +87,21 @@ export default async function PatientResponsesPage({
   const prev = currentIdx > 0 ? submissions[currentIdx - 1] : null // anterior = mais recente
   const next = currentIdx >= 0 && currentIdx < submissions.length - 1 ? submissions[currentIdx + 1] : null
 
-  // Ordena Q&A pela ordem original da pergunta
-  const sortedItems = current
-    ? [...current.items].sort((a, b) => (a.question?.order_num ?? 0) - (b.question?.order_num ?? 0))
+  // Deduplicate by question_id within a submission (patient may have submitted twice with same
+  // schedule_id before the schedule-close bug was fixed — keep the latest response per question)
+  const deduped = current
+    ? (() => {
+        const seen = new Map<string, ResponseRow>()
+        // items are ordered created_at DESC (from the outer query), so first = latest
+        for (const r of current.items) {
+          const qid = r.question?.id ?? r.id
+          if (!seen.has(qid)) seen.set(qid, r)
+        }
+        return [...seen.values()]
+      })()
     : []
+  // Sort by question order_num
+  const sortedItems = deduped.sort((a, b) => (a.question?.order_num ?? 0) - (b.question?.order_num ?? 0))
 
   return (
     <div className="space-y-6">
