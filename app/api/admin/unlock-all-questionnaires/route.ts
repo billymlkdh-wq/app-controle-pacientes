@@ -104,11 +104,11 @@ export async function POST(request: NextRequest) {
   const allActivePatients = (patients ?? []) as PatientRow[]
   await Promise.allSettled(allActivePatients.map((p) => notifyPatient(p, portalLink)))
 
-  const totalUnlocked = toInsert.length + futureSchedules.length
+  const totalUnlocked = toInsert.length + futureSchedulesToReset.length
   return NextResponse.json({
     ok: true,
     unlocked: totalUnlocked,
-    already_open: (openSchedules ?? []).length - futureSchedules.length,
+    already_open: (openSchedules ?? []).length - futureSchedulesToReset.length,
     notified: allActivePatients.length,
   })
 }
