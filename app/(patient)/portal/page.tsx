@@ -13,20 +13,24 @@ export default async function PortalHome() {
   const { data: { user } } = await supabase.auth.getUser()
   const { data: patient } = await supabase.from('patients').select('*').eq('user_id', user!.id).single()
 
+  // Pega schedule mais RECENTE aberta (não completada). Mais recente = última liberação do admin.
   const { data: schedule } = patient
     ? await supabase
         .from('questionnaire_schedule')
         .select('*')
         .eq('patient_id', patient.id)
         .in('status', ['pending', 'overdue'])
-        .order('due_date', { ascending: true })
+        .is('completed_at', null)
+        .order('due_date', { ascending: false })
         .limit(1)
         .maybeSingle()
     : { data: null }
 
   const today = todayBR()
-  const d2 = new Date(); d2.setDate(d2.getDate() - 2)
-  const windowStart = d2.toISOString().slice(0, 10)
+  // Janela de 48h a partir do due_date → expired quando due_date < (hoje - 2 dias)
+  const [ty, tm, td] = today.split('-').map(Number)
+  const wsDate = new Date(ty, tm - 1, td - 2)
+  const windowStart = `${wsDate.getFullYear()}-${String(wsDate.getMonth() + 1).padStart(2, '0')}-${String(wsDate.getDate()).padStart(2, '0')}`
   const overdue = schedule ? isOverdue(schedule.due_date) : false
   const days = schedule ? daysUntilDue(schedule.due_date) : null
   // locked = future (not released yet)

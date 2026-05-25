@@ -1,6 +1,7 @@
 // Libera o questionário para TODOS os pacientes ativos de uma vez.
-// Insere questionnaire_schedule pending hoje apenas para quem ainda não tem aberto.
-// Após liberar, envia email + WhatsApp para cada paciente notificado.
+// Comportamento simples: clique zera tudo — toda schedule aberta vira due_date=hoje
+// (janela de 48h conta a partir de hoje). Quem não tem schedule aberta recebe nova.
+// Schedules já completas (completed_at != null) NÃO são reabertas.
 import { NextResponse, type NextRequest } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
@@ -44,45 +45,30 @@ export async function POST(request: NextRequest) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin
   const portalLink = `${siteUrl}/questionnaire`
 
-  // Patients who responded within last 15 days — skip them (their cycle runs naturally via trigger)
-  const d15 = new Date(); d15.setDate(d15.getDate() - 15)
-  const { data: recentResponses } = await supabase
-    .from('questionnaire_responses')
-    .select('patient_id')
-    .gte('created_at', d15.toISOString())
-  const recentlyAnswered = new Set(
-    (recentResponses ?? []).map((r: { patient_id: string }) => r.patient_id),
-  )
-
-  // Busca schedules pending/overdue de pacientes ativos
-  const { data: openSchedules } = await supabase
-    .from('questionnaire_schedule')
-    .select('id, patient_id, due_date')
-    .in('status', ['pending', 'overdue'])
-
-  // Open schedules to reset → any due_date != today, for patients not recently answered
-  // (covers expired-past-window AND future schedules)
-  const futureSchedulesToReset = (openSchedules ?? []).filter(
-    (s) => s.due_date !== today && !recentlyAnswered.has(s.patient_id),
-  )
-  const openPatientIds = new Set((openSchedules ?? []).map((r) => r.patient_id))
-
-  // Busca todos os pacientes ativos com dados de contato
+  // 1. Busca todos os pacientes ativos
   const { data: patients, error: pErr } = await supabase
     .from('patients')
     .select('id, name, email, phone, whatsapp_phone')
     .eq('active', true)
-
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 400 })
 
-  // Patients with no open schedule AND who haven't answered recently → create pending for today
-  const toInsert = (patients ?? []).filter(
-    (p) => !openPatientIds.has(p.id) && !recentlyAnswered.has(p.id),
-  )
+  const activeIds = (patients ?? []).map((p) => p.id)
+  if (activeIds.length === 0) {
+    return NextResponse.json({ ok: true, unlocked: 0, reset: 0, notified: 0 })
+  }
 
-  // Reset future schedules to today (only for patients not recently answered)
-  if (futureSchedulesToReset.length > 0) {
-    const ids = futureSchedulesToReset.map((s) => s.id)
+  // 2. Busca schedules abertas (pending/overdue, sem completed_at) dos ativos
+  const { data: openSchedules } = await supabase
+    .from('questionnaire_schedule')
+    .select('id, patient_id, due_date')
+    .in('patient_id', activeIds)
+    .in('status', ['pending', 'overdue'])
+    .is('completed_at', null)
+
+  // 3. Reseta TODAS schedules abertas pra hoje (janela 48h reinicia)
+  const toReset = (openSchedules ?? []).filter((s) => s.due_date !== today)
+  if (toReset.length > 0) {
+    const ids = toReset.map((s) => s.id)
     const { error: updErr } = await supabase
       .from('questionnaire_schedule')
       .update({
@@ -97,7 +83,9 @@ export async function POST(request: NextRequest) {
     if (updErr) return NextResponse.json({ error: updErr.message }, { status: 400 })
   }
 
-  // Insere novos schedules para quem não tinha nenhum aberto
+  // 4. Insere schedule pra ativos sem nenhuma aberta
+  const openPatientIds = new Set((openSchedules ?? []).map((r) => r.patient_id))
+  const toInsert = (patients ?? []).filter((p) => !openPatientIds.has(p.id))
   if (toInsert.length > 0) {
     const rows = toInsert.map((p) => ({ patient_id: p.id, due_date: today, status: 'pending' }))
     const { error: insErr } = await supabase.from('questionnaire_schedule').insert(rows)
@@ -107,15 +95,14 @@ export async function POST(request: NextRequest) {
   revalidatePath('/patients')
   revalidatePath('/questionnaires')
 
-  // Sempre notifica TODOS os pacientes ativos — independente de já terem schedule aberto
+  // 5. Notifica TODOS ativos (WhatsApp + email)
   const allActivePatients = (patients ?? []) as PatientRow[]
   await Promise.allSettled(allActivePatients.map((p) => notifyPatient(p, portalLink)))
 
-  const totalUnlocked = toInsert.length + futureSchedulesToReset.length
   return NextResponse.json({
     ok: true,
-    unlocked: totalUnlocked,
-    already_open: (openSchedules ?? []).length - futureSchedulesToReset.length,
+    unlocked: toInsert.length,
+    reset: toReset.length,
     notified: allActivePatients.length,
   })
 }

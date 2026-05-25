@@ -18,20 +18,22 @@ export default async function QuestionnairePage() {
     return <p className="text-muted-foreground">Paciente não vinculado. Contate o admin.</p>
   }
 
-  // Busca o PRÓXIMO schedule pendente/atrasado (o mais antigo ainda aberto)
+  // Busca schedule mais RECENTE aberta (= última liberação do admin)
   const { data: schedule } = await supabase
     .from('questionnaire_schedule')
     .select('*')
     .eq('patient_id', patient.id)
     .in('status', ['pending', 'overdue'])
-    .order('due_date', { ascending: true })
+    .is('completed_at', null)
+    .order('due_date', { ascending: false })
     .limit(1)
     .maybeSingle()
 
   const today = todayBR()
-  // 2-day window: due_date must be in [today-2, today] to allow answering
-  const d2 = new Date(); d2.setDate(d2.getDate() - 2)
-  const windowStart = d2.toISOString().slice(0, 10)
+  // Janela 48h: due_date deve estar em [hoje-2, hoje] para liberar resposta
+  const [ty, tm, td] = today.split('-').map(Number)
+  const wsDate = new Date(ty, tm - 1, td - 2)
+  const windowStart = `${wsDate.getFullYear()}-${String(wsDate.getMonth() + 1).padStart(2, '0')}-${String(wsDate.getDate()).padStart(2, '0')}`
 
   const isFuture  = schedule ? schedule.due_date > today : false
   const isExpired = schedule ? schedule.due_date < windowStart : false
