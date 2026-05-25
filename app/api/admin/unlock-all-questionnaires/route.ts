@@ -60,10 +60,10 @@ export async function POST(request: NextRequest) {
     .select('id, patient_id, due_date')
     .in('status', ['pending', 'overdue'])
 
-  // Future schedules to reset → only for patients who haven't answered recently
-  // (preserves natural next-cycle schedules created by the trigger after answering)
+  // Open schedules to reset → any due_date != today, for patients not recently answered
+  // (covers expired-past-window AND future schedules)
   const futureSchedulesToReset = (openSchedules ?? []).filter(
-    (s) => s.due_date > today && !recentlyAnswered.has(s.patient_id),
+    (s) => s.due_date !== today && !recentlyAnswered.has(s.patient_id),
   )
   const openPatientIds = new Set((openSchedules ?? []).map((r) => r.patient_id))
 
@@ -85,7 +85,14 @@ export async function POST(request: NextRequest) {
     const ids = futureSchedulesToReset.map((s) => s.id)
     const { error: updErr } = await supabase
       .from('questionnaire_schedule')
-      .update({ due_date: today })
+      .update({
+        due_date: today,
+        status: 'pending',
+        reminder_d2_sent: false,
+        reminder_d1_sent: false,
+        reminder_d3_sent: false,
+        reminder_d7_sent: false,
+      })
       .in('id', ids)
     if (updErr) return NextResponse.json({ error: updErr.message }, { status: 400 })
   }

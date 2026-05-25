@@ -65,11 +65,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .maybeSingle()
 
   if (existing) {
-    // Se due_date ainda está no futuro, adianta para hoje (desbloqueio imediato)
-    if (existing.due_date > today) {
+    // Reseta pra hoje se due_date difere (cobre future + expirado fora da janela)
+    if (existing.due_date !== today) {
       const { error: updErr } = await supabase
         .from('questionnaire_schedule')
-        .update({ due_date: today })
+        .update({
+          due_date: today,
+          status: 'pending',
+          reminder_d2_sent: false,
+          reminder_d1_sent: false,
+          reminder_d3_sent: false,
+          reminder_d7_sent: false,
+        })
         .eq('id', existing.id)
       if (updErr) return NextResponse.json({ error: updErr.message }, { status: 400 })
 
@@ -78,7 +85,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ ok: true, schedule_id: existing.id, due_date: today, notifications })
     }
 
-    // Já estava aberto e acessível — notifica mesmo assim
+    // Já estava aberto pra hoje — notifica mesmo assim
     const notifications = patient ? await notifyPatient(patient, portalLink) : null
     return NextResponse.json({
       ok: true,
