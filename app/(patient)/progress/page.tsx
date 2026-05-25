@@ -11,7 +11,7 @@ export default async function PatientProgressPage() {
 
   const { data: responses } = await supabase
     .from('questionnaire_responses')
-    .select('response_number,created_at,question:questionnaire_questions(order_num,is_numeric_chart,question_text)')
+    .select('response_number,created_at,schedule_id,question:questionnaire_questions(order_num,is_numeric_chart,question_text)')
     .eq('patient_id', patient!.id)
     .order('created_at', { ascending: true })
 

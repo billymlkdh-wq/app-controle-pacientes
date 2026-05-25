@@ -40,7 +40,8 @@ export default async function QuestionnairesPage() {
   const map = new Map<string, Agg & { groupKeys: Set<string> }>()
   for (const r of rows) {
     if (!r.patient) continue
-    const groupKey = r.schedule_id ?? r.created_at.slice(0, 10)
+    const tsBucket = r.created_at.slice(0, 16) // separa submissões mesmo no mesmo schedule_id
+    const groupKey = r.schedule_id ? `${r.schedule_id}@${tsBucket}` : `t:${tsBucket}`
     const existing = map.get(r.patient.id)
     if (existing) {
       existing.responses += 1

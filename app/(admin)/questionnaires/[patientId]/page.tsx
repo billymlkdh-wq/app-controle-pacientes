@@ -27,7 +27,10 @@ type ResponseRow = {
 }
 
 function groupKeyOf(r: ResponseRow): string {
-  return r.schedule_id ?? r.created_at.slice(0, 10)
+  // Bucket por minuto dentro do schedule — separa submissões distintas
+  // mesmo quando o admin reabre o mesmo schedule_id pro paciente responder de novo.
+  const tsBucket = r.created_at.slice(0, 16) // YYYY-MM-DDTHH:MM
+  return r.schedule_id ? `${r.schedule_id}@${tsBucket}` : `t:${tsBucket}`
 }
 
 function formatAnswer(r: ResponseRow): string {

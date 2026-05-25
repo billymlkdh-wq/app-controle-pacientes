@@ -9,6 +9,7 @@ import {
 type ResponseRow = {
   response_number: number | null
   created_at: string
+  schedule_id: string | null
   question: { order_num: number; is_numeric_chart: boolean; question_text: string } | null
 }
 
@@ -34,17 +35,34 @@ function buildData(
   responses: ResponseRow[],
   config: Record<number, { name: string; color: string }>,
 ) {
-  const byDate = new Map<string, Record<string, number | string>>()
+  // Agrupa por submissão. Key = schedule_id se houver, senão created_at por minuto.
+  // Garante que submissões distintas (mesmo no mesmo dia) viram pontos separados.
+  const groups = new Map<string, { ts: string; values: Record<string, number | string> }>()
   for (const r of responses) {
     if (!r.question?.is_numeric_chart || r.response_number == null) continue
     const s = config[r.question.order_num]
     if (!s) continue
-    const date = new Date(r.created_at).toISOString().slice(0, 10)
-    const row = byDate.get(date) ?? { date }
-    row[s.name] = Number(r.response_number)
-    byDate.set(date, row)
+    const bucket = r.schedule_id ? `s:${r.schedule_id}` : `t:${r.created_at.slice(0, 16)}`
+    const g = groups.get(bucket) ?? { ts: r.created_at, values: {} }
+    g.values[s.name] = Number(r.response_number)
+    if (r.created_at < g.ts) g.ts = r.created_at
+    groups.set(bucket, g)
   }
-  return Array.from(byDate.values()).sort((a, b) => String(a.date).localeCompare(String(b.date)))
+  const sorted = [...groups.values()].sort((a, b) => a.ts.localeCompare(b.ts))
+  const dayCount = new Map<string, number>()
+  const dayTotal = new Map<string, number>()
+  for (const g of sorted) {
+    const d = g.ts.slice(0, 10)
+    dayTotal.set(d, (dayTotal.get(d) ?? 0) + 1)
+  }
+  return sorted.map((g) => {
+    const d = g.ts.slice(0, 10)
+    const n = (dayCount.get(d) ?? 0) + 1
+    dayCount.set(d, n)
+    const ddmm = `${d.slice(8, 10)}/${d.slice(5, 7)}`
+    const label = (dayTotal.get(d) ?? 1) > 1 ? `${ddmm} (${n})` : ddmm
+    return { date: label, ...g.values }
+  })
 }
 
 const tooltipStyle = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }
