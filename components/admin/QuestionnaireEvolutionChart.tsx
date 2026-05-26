@@ -42,7 +42,9 @@ function buildData(
     if (!r.question?.is_numeric_chart || r.response_number == null) continue
     const s = config[r.question.order_num]
     if (!s) continue
-    const bucket = r.schedule_id ? `s:${r.schedule_id}` : `t:${r.created_at.slice(0, 16)}`
+    // Bucket por (schedule_id × minuto). schedule_id sozinho mescla múltiplas submissões
+    // dentro do mesmo ciclo (quando admin reabre o mesmo row).
+    const bucket = `${r.schedule_id ?? 'none'}@${r.created_at.slice(0, 16)}`
     const g = groups.get(bucket) ?? { ts: r.created_at, values: {} }
     g.values[s.name] = Number(r.response_number)
     if (r.created_at < g.ts) g.ts = r.created_at
