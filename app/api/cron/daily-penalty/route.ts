@@ -73,11 +73,12 @@ export async function GET(req: NextRequest) {
 
     // Check questionnaire (if any was due yesterday and not answered)
     const { data: pendingQ } = await db
-      .from('questionnaire_schedules')
+      .from('questionnaire_schedule')
       .select('id')
       .eq('patient_id', patientId)
       .lte('due_date', yDate)
-      .eq('status', 'pending')
+      .in('status', ['pending', 'overdue'])
+      .is('completed_at', null)
 
     for (const q of (pendingQ ?? []) as any[]) {
       const { data: existing } = await db
