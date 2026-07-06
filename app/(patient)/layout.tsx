@@ -22,8 +22,10 @@ export default async function PatientLayout({ children }: { children: React.Reac
             <Link href="/portal" className="hover:text-primary">Início</Link>
             <Link href="/questionnaire" className="hover:text-primary">Questionário</Link>
             <Link href="/progress" className="hover:text-primary">Evolução</Link>
+            <Link href="/habitos" className="hover:text-primary">Hábitos</Link>
             <Link href="/metas" className="hover:text-primary">Metas</Link>
             <Link href="/ranking" className="hover:text-primary">Ranking</Link>
+            <Link href="/desafios" className="hover:text-primary">Desafios</Link>
             <Link href="/conquistas" className="hover:text-primary">Conquistas</Link>
             <Link href="/comunidade" className="hover:text-primary">Comunidade</Link>
           </nav>
