@@ -19,9 +19,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: '/patients', label: 'Pacientes', icon: Users },
     { href: '/financial', label: 'Financeiro', icon: Wallet },
     { href: '/questionnaires', label: 'Questionários', icon: ClipboardList },
-    { href: '/ranking', label: 'Ranking', icon: Trophy },
-    { href: '/metas', label: 'Metas', icon: Target },
-    { href: '/comunidade', label: 'Comunidade', icon: MessageSquare },
+    { href: '/admin/ranking', label: 'Ranking', icon: Trophy },
+    { href: '/admin/metas', label: 'Metas', icon: Target },
+    { href: '/admin/comunidade', label: 'Comunidade', icon: MessageSquare },
     { href: '/notifications', label: 'Notificações', icon: Bell },
   ]
 
