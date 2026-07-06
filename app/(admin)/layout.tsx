@@ -43,7 +43,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           ))}
         </nav>
         <div className="p-3 border-t space-y-2">
-          <Link href="/admin/ver-como-paciente" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-yellow-600 hover:bg-yellow-500/10 hover:text-yellow-500 border border-yellow-500/30">
+          <Link href="/api/admin/enter-patient-view" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-yellow-600 hover:bg-yellow-500/10 hover:text-yellow-500 border border-yellow-500/30">
             <Eye className="h-4 w-4" />
             Ver como paciente
           </Link>

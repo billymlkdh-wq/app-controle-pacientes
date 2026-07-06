@@ -17,7 +17,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
       {isAdmin && (
         <div className="bg-yellow-500 text-yellow-950 text-xs font-medium text-center py-1.5 flex items-center justify-center gap-3">
           <span>👁 Modo paciente — navegando como paciente</span>
-          <Link href="/dashboard" className="underline font-bold">← Voltar ao admin</Link>
+          <Link href="/api/admin/exit-patient-view" className="underline font-bold">← Voltar ao admin</Link>
         </div>
       )}
       <header className="h-14 border-b flex items-center justify-between px-4">

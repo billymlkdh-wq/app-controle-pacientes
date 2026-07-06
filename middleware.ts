@@ -30,7 +30,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/portal', request.url))
   }
 
-  if (isPatientPath(pathname) && role === 'admin') {
+  const adminPatientMode = request.cookies.get('admin_patient_mode')?.value === '1'
+  if (isPatientPath(pathname) && role === 'admin' && !adminPatientMode) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
