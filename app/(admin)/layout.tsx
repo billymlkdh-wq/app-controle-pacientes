@@ -1,7 +1,7 @@
 // Layout admin — sidebar + header + ThemeToggle + NotificationBell
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { LayoutDashboard, Users, Wallet, ClipboardList, Bell, Trophy, Target, MessageSquare, Flame, Swords } from 'lucide-react'
+import { LayoutDashboard, Users, Wallet, ClipboardList, Bell, Trophy, Target, MessageSquare, Flame, Swords, Eye } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { NotificationBell } from '@/components/notification-bell'
@@ -42,9 +42,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </Link>
           ))}
         </nav>
-        <form action="/auth/logout" method="post" className="p-3 border-t">
-          <Button type="submit" variant="outline" size="sm" className="w-full">Sair</Button>
-        </form>
+        <div className="p-3 border-t space-y-2">
+          <Link href="/portal" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-yellow-600 hover:bg-yellow-500/10 hover:text-yellow-500 border border-yellow-500/30">
+            <Eye className="h-4 w-4" />
+            Ver como paciente
+          </Link>
+          <form action="/auth/logout" method="post">
+            <Button type="submit" variant="outline" size="sm" className="w-full">Sair</Button>
+          </form>
+        </div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-14 border-b flex items-center justify-between px-4">

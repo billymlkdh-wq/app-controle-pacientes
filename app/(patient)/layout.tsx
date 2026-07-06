@@ -1,4 +1,3 @@
-// Layout paciente — header limpo + ThemeToggle + NotificationBell
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -11,10 +10,16 @@ export default async function PatientLayout({ children }: { children: React.Reac
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
   const role = (user.user_metadata as { role?: string } | null)?.role
-  if (role === 'admin') redirect('/dashboard')
+  const isAdmin = role === 'admin'
 
   return (
     <div className="min-h-screen flex flex-col">
+      {isAdmin && (
+        <div className="bg-yellow-500 text-yellow-950 text-xs font-medium text-center py-1.5 flex items-center justify-center gap-3">
+          <span>👁 Modo visualização — você está vendo o app como paciente</span>
+          <Link href="/dashboard" className="underline font-semibold">Voltar ao painel admin</Link>
+        </div>
+      )}
       <header className="h-14 border-b flex items-center justify-between px-4">
         <div className="flex items-center gap-6">
           <div className="font-semibold">Rafael Bolson</div>
@@ -33,9 +38,11 @@ export default async function PatientLayout({ children }: { children: React.Reac
         <div className="flex items-center gap-2">
           <NotificationBell basePath="/portal" />
           <ThemeToggle />
-          <form action="/auth/logout" method="post">
-            <Button type="submit" variant="ghost" size="sm">Sair</Button>
-          </form>
+          {!isAdmin && (
+            <form action="/auth/logout" method="post">
+              <Button type="submit" variant="ghost" size="sm">Sair</Button>
+            </form>
+          )}
         </div>
       </header>
       <main className="flex-1 p-4 md:p-6">{children}</main>
