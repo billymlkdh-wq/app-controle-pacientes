@@ -2,6 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { handleQuestionnaireSubmission } from '@/lib/gamification'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -63,9 +64,26 @@ export async function POST(request: NextRequest) {
     if (updErr) console.error('Falha ao fechar schedule:', updErr)
   }
 
+  // Gamificação: pontua e atualiza streak (fire-and-forget, não bloqueia resposta)
+  const isLate = body.schedule_id
+    ? await (async () => {
+        const { data: sched } = await supabase
+          .from('questionnaire_schedule')
+          .select('due_date')
+          .eq('id', body.schedule_id!)
+          .maybeSingle()
+        if (!sched) return false
+        const today = new Date().toISOString().slice(0, 10)
+        return sched.due_date < today
+      })()
+    : false
+  handleQuestionnaireSubmission(body.patient_id, isLate).catch(console.error)
+
   revalidatePath('/portal')
   revalidatePath('/progress')
   revalidatePath('/questionnaires')
   revalidatePath('/patients')
+  revalidatePath('/ranking')
+  revalidatePath('/conquistas')
   return NextResponse.json({ ok: true, count: rows.length }, { status: 201 })
 }

@@ -1,7 +1,7 @@
 // Layout admin — sidebar + header + ThemeToggle + NotificationBell
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { LayoutDashboard, Users, Wallet, ClipboardList, Bell } from 'lucide-react'
+import { LayoutDashboard, Users, Wallet, ClipboardList, Bell, Trophy, Target, MessageSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { NotificationBell } from '@/components/notification-bell'
@@ -19,6 +19,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: '/patients', label: 'Pacientes', icon: Users },
     { href: '/financial', label: 'Financeiro', icon: Wallet },
     { href: '/questionnaires', label: 'Questionários', icon: ClipboardList },
+    { href: '/ranking', label: 'Ranking', icon: Trophy },
+    { href: '/metas', label: 'Metas', icon: Target },
+    { href: '/comunidade', label: 'Comunidade', icon: MessageSquare },
     { href: '/notifications', label: 'Notificações', icon: Bell },
   ]
 
