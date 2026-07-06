@@ -1,14 +1,14 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Droplets, Swords, Trophy, Star } from 'lucide-react'
+import { Home, Droplets, Users, Trophy, Star } from 'lucide-react'
 
 const NAV = [
-  { href: '/portal',    label: 'Início',   icon: Home },
-  { href: '/habitos',   label: 'Hábitos',  icon: Droplets },
-  { href: '/desafios',  label: 'Desafios', icon: Swords },
-  { href: '/ranking',   label: 'Ranking',  icon: Trophy },
-  { href: '/conquistas',label: 'Perfil',   icon: Star },
+  { href: '/portal',    label: 'Início',    icon: Home    },
+  { href: '/habitos',   label: 'Hábitos',   icon: Droplets },
+  { href: '/comunidade',label: 'Feed',      icon: Users   },
+  { href: '/ranking',   label: 'Ranking',   icon: Trophy  },
+  { href: '/conquistas',label: 'Perfil',    icon: Star    },
 ]
 
 export function BottomNav() {

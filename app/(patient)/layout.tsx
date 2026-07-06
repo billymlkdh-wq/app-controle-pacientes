@@ -27,10 +27,10 @@ export default async function PatientLayout({ children }: { children: React.Reac
 
   if (patient?.id) {
     const [{ data: pts }, { data: str }] = await Promise.all([
-      db.from('patient_points').select('points').eq('patient_id', patient.id),
+      db.from('patient_points').select('amount').eq('patient_id', patient.id),
       db.from('patient_streaks').select('current_streak').eq('patient_id', patient.id).maybeSingle(),
     ])
-    totalXP = (pts ?? []).reduce((s: number, r: any) => s + (r.points ?? 0), 0)
+    totalXP = (pts ?? []).reduce((s: number, r: any) => s + (r.amount ?? 0), 0)
     streak = str?.current_streak ?? 0
   }
 
