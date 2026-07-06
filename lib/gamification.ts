@@ -17,22 +17,27 @@ export const POINTS = {
 } as const
 
 export const LEVELS = [
-  { name: 'Franguinha',       emoji: '🐔', min: 0,     max: 499   },
-  { name: 'Iniciante',        emoji: '🌱', min: 500,   max: 999   },
-  { name: 'Agora Vai',        emoji: '⚡', min: 1000,  max: 1999  },
-  { name: 'Focada',           emoji: '🎯', min: 2000,  max: 3999  },
-  { name: 'Determinada',      emoji: '💪', min: 4000,  max: 7999  },
-  { name: 'Disciplinada',     emoji: '🔥', min: 8000,  max: 14999 },
-  { name: 'Marombinha',       emoji: '🏋️', min: 15000, max: 24999 },
-  { name: 'Imparável',        emoji: '🚀', min: 25000, max: 39999 },
-  { name: 'Fitness',          emoji: '🏆', min: 40000, max: 59999 },
-  { name: 'Deusa Fitness',    emoji: '👑', min: 60000, max: Infinity },
+  { name: 'Franguinha',        nameM: 'Franguinho',       emoji: '🐔', min: 0,     max: 499   },
+  { name: 'Iniciante',         nameM: 'Iniciante',        emoji: '🌱', min: 500,   max: 999   },
+  { name: 'Focada',            nameM: 'Focado',           emoji: '⚡', min: 1000,  max: 1999  },
+  { name: 'Rata de Academia',  nameM: 'Rato de Academia', emoji: '🎯', min: 2000,  max: 3999  },
+  { name: 'Disciplinada',      nameM: 'Disciplinado',     emoji: '💪', min: 4000,  max: 7999  },
+  { name: 'Marombinha',        nameM: 'Marombinho',       emoji: '🔥', min: 8000,  max: 14999 },
+  { name: 'Fitness',           nameM: 'Fitness',          emoji: '🏋️', min: 15000, max: 24999 },
+  { name: 'Musa',              nameM: 'Galã',             emoji: '🚀', min: 25000, max: 39999 },
+  { name: 'Atleta Pro',        nameM: 'Atleta Pro',       emoji: '🏆', min: 40000, max: 59999 },
+  { name: 'Deusa Fitness',     nameM: 'Deus Fitness',     emoji: '👑', min: 60000, max: Infinity },
 ] as const
 
-export type Level = typeof LEVELS[number]
+export type Level = (typeof LEVELS)[number]
 
 export function getLevel(totalPoints: number): Level {
   return (LEVELS.find((l) => totalPoints >= l.min && totalPoints <= l.max) ?? LEVELS[0]) as Level
+}
+
+export function getLevelName(level: Level, sex?: string | null): string {
+  if (sex === 'M') return (level as any).nameM ?? level.name
+  return level.name
 }
 
 export function getProgressToNext(totalPoints: number): number {

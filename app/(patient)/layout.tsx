@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { BottomNav } from '@/components/patient/BottomNav'
-import { LEVELS } from '@/lib/gamification'
+import { LEVELS, getLevelName } from '@/lib/gamification'
 
 export default async function PatientLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -18,9 +18,11 @@ export default async function PatientLayout({ children }: { children: React.Reac
 
   const { data: patient } = await db
     .from('patients')
-    .select('id, name')
+    .select('id, name, sex')
     .eq('user_id', user.id)
     .maybeSingle()
+
+  const sex = (patient as any)?.sex as string | null
 
   let totalXP = 0
   let streak = 0
@@ -75,9 +77,9 @@ export default async function PatientLayout({ children }: { children: React.Reac
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-xs font-bold tracking-wide">
-              {currentLevel.emoji} {currentLevel.name.toUpperCase()}
+              {currentLevel.emoji} {getLevelName(currentLevel, sex).toUpperCase()}
               {nextLevel && (
-                <span className="text-[#4a5080] font-normal"> → {nextLevel.name}</span>
+                <span className="text-[#4a5080] font-normal"> → {getLevelName(nextLevel, sex)}</span>
               )}
             </span>
             <span className="text-cyan-400 text-xs font-bold">{totalXP} XP</span>
@@ -90,7 +92,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
           </div>
           {nextLevel && (
             <div className="text-[10px] text-[#4a5080] mt-1 text-right">
-              {xpToNext} XP para {nextLevel.name}
+              {xpToNext} XP para {getLevelName(nextLevel, sex)}
             </div>
           )}
         </div>

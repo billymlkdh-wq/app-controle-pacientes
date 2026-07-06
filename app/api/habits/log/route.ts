@@ -15,12 +15,15 @@ export async function POST(req: NextRequest) {
   if (!patient) return NextResponse.json({ error: 'Patient not found' }, { status: 404 })
 
   const body = await req.json()
-  const { habit_type, value, note, auto_post } = body as {
+  const { habit_type, value, photo_url, note, auto_post } = body as {
     habit_type: 'water' | 'steps' | 'cardio' | 'workout'
     value: number
+    photo_url?: string
     note?: string
     auto_post?: boolean
   }
+
+  if (!photo_url) return NextResponse.json({ error: 'Foto obrigatória como prova' }, { status: 400 })
 
   const today = new Date().toISOString().split('T')[0]
 
@@ -42,6 +45,7 @@ export async function POST(req: NextRequest) {
     habit_type,
     value,
     logged_date: today,
+    photo_url: photo_url ?? null,
     note: note ?? null,
     auto_posted: !!auto_post,
   }).select().single()

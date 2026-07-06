@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const dynamic = 'force-dynamic'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { ACHIEVEMENTS, getLevel } from '@/lib/gamification'
+import { ACHIEVEMENTS, getLevel, getLevelName } from '@/lib/gamification'
 import { AvatarUpload } from '@/components/patient/AvatarUpload'
 
 export default async function PerfilPage() {
@@ -10,7 +10,7 @@ export default async function PerfilPage() {
   const db = createAdminClient() as any
 
   const { data: patient } = await db
-    .from('patients').select('id, name, avatar_url, objective, birth_date').eq('user_id', user!.id).maybeSingle()
+    .from('patients').select('id, name, sex, avatar_url, objective, birth_date').eq('user_id', user!.id).maybeSingle()
 
   const patientId = (patient as any)?.id as string | undefined
 
@@ -25,6 +25,7 @@ export default async function PerfilPage() {
   )
   const totalXP = ((pointsRaw ?? []) as any[]).reduce((s: number, r: any) => s + (r.amount ?? 0), 0)
   const level = getLevel(totalXP)
+  const sex = (patient as any)?.sex as string | null
   const streak = (streakRaw as any)?.current_streak ?? 0
   const longestStreak = (streakRaw as any)?.longest_streak ?? 0
   const name = (patient as any)?.name ?? 'Paciente'
@@ -39,7 +40,7 @@ export default async function PerfilPage() {
         <AvatarUpload name={name} avatarUrl={avatarUrl} />
         <div className="text-center">
           <p className="font-bold text-lg">{name}</p>
-          <p className="text-[#4a5080] text-sm">{level.emoji} {level.name}</p>
+          <p className="text-[#4a5080] text-sm">{level.emoji} {getLevelName(level, sex)}</p>
         </div>
       </div>
 

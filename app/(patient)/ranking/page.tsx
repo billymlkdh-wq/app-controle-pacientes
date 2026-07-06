@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic'
 import { Suspense } from 'react'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { getLevel } from '@/lib/gamification'
+import { getLevel, getLevelName } from '@/lib/gamification'
 import { RankingPeriodTabs } from '@/components/patient/RankingPeriodTabs'
 import { PatientAvatar } from '@/components/patient/PatientAvatar'
 
@@ -35,7 +35,7 @@ export default async function RankingPage({
   const myId = (currentPatient as any)?.id as string | undefined
 
   const [{ data: patients }, allTimeResult] = await Promise.all([
-    db.from('patients').select('id, name, avatar_url').eq('active', true),
+    db.from('patients').select('id, name, sex, avatar_url').eq('active', true),
     db.from('patient_points').select('patient_id, amount'),
   ])
 
@@ -58,6 +58,7 @@ export default async function RankingPage({
     .map((p: any) => ({
       id: p.id as string,
       name: p.name as string,
+      sex: (p.sex as string | null) ?? null,
       avatarUrl: (p.avatar_url as string | null) ?? null,
       periodXP: periodPts.get(p.id) ?? 0,
       totalXP: allTimePts.get(p.id) ?? 0,
@@ -98,7 +99,7 @@ export default async function RankingPage({
                 <p className={`text-xs font-semibold text-center leading-tight ${elevated ? '' : 'text-[#c0c8e0]'}`}>
                   {r.name.split(' ')[0]}
                 </p>
-                <p className="text-[10px] text-[#4a5080]">{getLevel(r.totalXP).name}</p>
+                <p className="text-[10px] text-[#4a5080]">{getLevelName(getLevel(r.totalXP), r.sex)}</p>
                 <div className={`w-full rounded-xl py-2 text-center border ${MEDAL_BG[rankIdx]}`}>
                   <div className={elevated ? 'text-xl' : 'text-base'}>{medals[rankIdx]}</div>
                   <div className={`font-bold ${elevated ? 'text-lg' : 'text-sm'} ${MEDAL_COLORS[rankIdx]}`}>{r.periodXP}</div>
@@ -143,7 +144,7 @@ export default async function RankingPage({
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">{isMe ? 'Você' : r.name.split(' ')[0]}</p>
                   <p className="text-[10px] text-[#4a5080]">
-                    {getLevel(r.totalXP).emoji} {getLevel(r.totalXP).name}
+                    {getLevel(r.totalXP).emoji} {getLevelName(getLevel(r.totalXP), r.sex)}
                   </p>
                 </div>
                 <span className="text-cyan-400 text-sm font-bold">{r.periodXP} XP</span>
