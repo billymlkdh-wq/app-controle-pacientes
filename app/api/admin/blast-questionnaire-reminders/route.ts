@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin
   const portalLink = `${siteUrl}/questionnaire`
 
-  // Schedules pendentes/atrasados com data <= hoje (ou seja, paciente PODE responder mas não respondeu)
+  // Schedules pendentes/atrasados com data <= hoje e sem completed_at
   const { data: schedules, error } = await supabase
     .from('questionnaire_schedule')
     .select('id, due_date, status, patient:patients(id, name, whatsapp_phone, phone)')
@@ -35,7 +35,19 @@ export async function POST(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const rows = (schedules ?? []) as unknown as ScheduleRow[]
+  // Segundo filtro: exclui pacientes que já têm resposta vinculada a este schedule
+  // (protege contra schedule não fechado por falha de RLS)
+  const d16 = new Date(); d16.setDate(d16.getDate() - 16)
+  const { data: recentResponses } = await supabase
+    .from('questionnaire_responses')
+    .select('patient_id')
+    .gte('created_at', d16.toISOString())
+  const alreadyAnswered = new Set<string>(
+    (recentResponses ?? []).map((r: { patient_id: string }) => r.patient_id)
+  )
+
+  const rows = ((schedules ?? []) as unknown as ScheduleRow[])
+    .filter((s) => s.patient?.id && !alreadyAnswered.has(s.patient.id))
 
   const details: Array<{
     patient_id: string | null

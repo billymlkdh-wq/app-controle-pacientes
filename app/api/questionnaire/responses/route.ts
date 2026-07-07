@@ -1,7 +1,7 @@
 // API de respostas do questionário — paciente envia, admin lista
 import { NextResponse, type NextRequest } from 'next/server'
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { handleQuestionnaireSubmission } from '@/lib/gamification'
 
 export async function GET(request: NextRequest) {
@@ -55,9 +55,12 @@ export async function POST(request: NextRequest) {
   if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 400 })
 
   // Marca schedule como completed (trigger cria próximo +15d)
+  // Usa adminClient para bypassar RLS — o cliente anon pode falhar silenciosamente
+  // em admin-patient mode onde auth.uid() não corresponde ao patient.user_id
   if (body.schedule_id) {
+    const admin = createAdminClient() as any
     const now = new Date().toISOString()
-    const { error: updErr } = await supabase
+    const { error: updErr } = await admin
       .from('questionnaire_schedule')
       .update({ status: 'completed', completed_at: now })
       .eq('id', body.schedule_id)
