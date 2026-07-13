@@ -51,13 +51,16 @@ export function HabitTracker({ todayLogs, goals }: Props) {
     const value    = type === 'workout' ? 1 : (rawValue ?? parseFloat(values[type] ?? '0'))
     const photo    = photos[type]
 
-    if (!photo) { toast.error('Envie uma foto como prova 📸'); return }
     if (type !== 'workout' && (!value || value <= 0)) { toast.error('Informe o valor'); return }
 
     setLoading((p) => ({ ...p, [type]: true }))
     try {
-      const photoUrl = await uploadPhoto(type, photo)
-      if (!photoUrl) throw new Error('Erro ao enviar foto')
+      let photoUrl: string | undefined
+      if (photo) {
+        const url = await uploadPhoto(type, photo)
+        if (!url) throw new Error('Erro ao enviar foto')
+        photoUrl = url
+      }
 
       const res = await fetch('/api/habits/log', {
         method: 'POST',
@@ -65,7 +68,7 @@ export function HabitTracker({ todayLogs, goals }: Props) {
         body: JSON.stringify({
           habit_type: type,
           value,
-          photo_url: photoUrl,
+          photo_url: photoUrl ?? null,
           auto_post: autoPost[type] ?? false,
         }),
       })
@@ -129,16 +132,16 @@ export function HabitTracker({ todayLogs, goals }: Props) {
               />
             </div>
 
-            {/* Photo upload area */}
+            {/* Photo upload area (opcional) */}
             <div>
               <p className="text-[10px] text-[#4a5080] uppercase tracking-wider mb-1.5">
-                📸 Prova obrigatória — {h.photoLabel}
+                📸 Foto opcional — {h.photoLabel}
               </p>
+              {/* sem capture="environment" → abre seletor com opção câmera + galeria */}
               <input
                 ref={(el) => { fileRefs.current[h.type] = el }}
                 type="file"
                 accept="image/*"
-                capture="environment"
                 className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) pickPhoto(h.type, f) }}
               />
@@ -156,10 +159,10 @@ export function HabitTracker({ todayLogs, goals }: Props) {
               ) : (
                 <button
                   onClick={() => fileRefs.current[h.type]?.click()}
-                  className="w-full border-2 border-dashed border-[#2a2b50] hover:border-pink-500/50 rounded-xl py-4 flex flex-col items-center gap-1.5 text-[#4a5080] hover:text-pink-400 transition-colors"
+                  className="w-full border-2 border-dashed border-[#2a2b50] hover:border-pink-500/30 rounded-xl py-3 flex flex-col items-center gap-1 text-[#4a5080] hover:text-pink-400 transition-colors"
                 >
-                  <Camera className="h-5 w-5" />
-                  <span className="text-xs">Tirar foto ou escolher da galeria</span>
+                  <Camera className="h-4 w-4" />
+                  <span className="text-xs">Adicionar foto (câmera ou galeria)</span>
                 </button>
               )}
             </div>
@@ -177,7 +180,7 @@ export function HabitTracker({ todayLogs, goals }: Props) {
                   className="flex-1 bg-[#0b0c1a] border border-[#1e2040] rounded-xl px-3 py-2 text-sm text-white placeholder:text-[#4a5080] outline-none focus:border-pink-500/50"
                 />
                 <button
-                  disabled={!values[h.type] || !photo || busy}
+                  disabled={!values[h.type] || busy}
                   onClick={() => submit(h.type, parseFloat(values[h.type]))}
                   className="bg-pink-500 hover:bg-pink-600 disabled:opacity-40 rounded-xl px-4 text-sm font-semibold text-white transition-colors flex items-center gap-1.5"
                 >
@@ -186,7 +189,7 @@ export function HabitTracker({ todayLogs, goals }: Props) {
               </div>
             ) : (
               <button
-                disabled={!photo || busy || done}
+                disabled={busy || done}
                 onClick={() => submit(h.type)}
                 className={`w-full rounded-xl py-2.5 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
                   done

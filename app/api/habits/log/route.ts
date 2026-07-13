@@ -23,7 +23,6 @@ export async function POST(req: NextRequest) {
     auto_post?: boolean
   }
 
-  if (!photo_url) return NextResponse.json({ error: 'Foto obrigatória como prova' }, { status: 400 })
 
   const today = new Date().toISOString().split('T')[0]
 
