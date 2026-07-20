@@ -84,7 +84,11 @@ export async function getPatientPointsForPeriod(patientId: string, since: Date):
 
 async function awardPoints(patientId: string, amount: number, reason: string) {
   const admin = db()
-  await admin.from('patient_points').insert({ patient_id: patientId, amount, reason })
+  const { error: insertErr } = await admin.from('patient_points').insert({ patient_id: patientId, amount, reason })
+  if (insertErr) {
+    console.error('[gamification] awardPoints FAILED', { patientId, amount, reason, error: insertErr.message })
+    return
+  }
   const total = await getPatientTotalPoints(patientId)
   const levelKeys: Record<number, string> = {
     1000: 'level_agora_vai',
@@ -113,15 +117,17 @@ export async function handleQuestionnaireSubmission(patientId: string, isLate: b
   const currentStreak = (streakRow?.current_streak ?? 0) + 1
   const longestStreak = Math.max(currentStreak, streakRow?.longest_streak ?? 0)
   if (streakRow) {
-    await admin.from('patient_streaks').update({
+    const { error: updErr } = await admin.from('patient_streaks').update({
       current_streak: currentStreak, longest_streak: longestStreak,
       last_completed_at: now.toISOString(), updated_at: now.toISOString(),
     }).eq('patient_id', patientId)
+    if (updErr) console.error('[gamification] streak update FAILED', { patientId, error: updErr.message })
   } else {
-    await admin.from('patient_streaks').insert({
+    const { error: insErr } = await admin.from('patient_streaks').insert({
       patient_id: patientId, current_streak: currentStreak,
       longest_streak: longestStreak, last_completed_at: now.toISOString(),
     })
+    if (insErr) console.error('[gamification] streak insert FAILED', { patientId, error: insErr.message })
   }
   const base = isLate ? POINTS.questionnaire_late : POINTS.questionnaire_on_time
   const streakBonus = currentStreak * POINTS.streak_bonus_per
