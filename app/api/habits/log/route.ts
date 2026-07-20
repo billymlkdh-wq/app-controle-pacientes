@@ -51,8 +51,19 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
+  // Soma acumulada do dia (incluindo o log recém inserido)
+  // Necessário para detectar quando meta diária é atingida em múltiplos registros
+  const { data: todayLogs } = await admin
+    .from('patient_habit_logs')
+    .select('value')
+    .eq('patient_id', patient.id)
+    .eq('habit_type', habit_type)
+    .eq('logged_date', today)
+  const dailyTotal = (todayLogs ?? []).reduce((s: number, l: any) => s + (l.value ?? 0), 0)
+  const previousTotal = dailyTotal - value
+
   // XP + conquistas
-  const result = await handleHabitLog(patient.id, habit_type, value, goalValue).catch(() => ({ xp: 0, goalReached: false }))
+  const result = await handleHabitLog(patient.id, habit_type, value, goalValue, dailyTotal, previousTotal).catch(() => ({ xp: 0, goalReached: false }))
 
   // Auto-post na comunidade
   if (auto_post) {

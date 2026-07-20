@@ -159,19 +159,28 @@ export async function handleHabitLog(
   habitType: 'water' | 'steps' | 'cardio' | 'workout',
   value: number,
   goalValue: number,
+  dailyTotal?: number,   // total acumulado do dia incluindo este log
+  previousTotal?: number, // total antes deste log
 ) {
   const admin = db()
-  const goalReached = goalValue > 0 && value >= goalValue
+
+  // Para água e passos: usa total acumulado do dia para detectar meta
+  // Para cardio e treino: XP por sessão independente de meta
+  const cumulative = dailyTotal ?? value
+  const prevTotal  = previousTotal ?? 0
+
+  // Meta "cruzada" neste exato log (evita XP duplo em logs subsequentes)
+  const justReachedGoal = goalValue > 0 && cumulative >= goalValue && prevTotal < goalValue
+  const goalReached = goalValue > 0 && cumulative >= goalValue
+
   let xp = 0
   let reason = ''
   switch (habitType) {
     case 'water':
-      if (goalReached) { xp = POINTS.habit_water_goal; reason = 'meta_agua' }
+      if (justReachedGoal) { xp = POINTS.habit_water_goal; reason = 'meta_agua' }
       break
     case 'steps':
-      if (goalReached) { xp = POINTS.habit_steps_goal; reason = 'meta_passos' }
-      else xp = Math.round((value / goalValue) * POINTS.habit_steps_goal * 0.5)
-      if (xp > 0 && !reason) reason = 'passos_parcial'
+      if (justReachedGoal) { xp = POINTS.habit_steps_goal; reason = 'meta_passos' }
       break
     case 'cardio':
       xp = POINTS.habit_cardio; reason = 'cardio_extra'
