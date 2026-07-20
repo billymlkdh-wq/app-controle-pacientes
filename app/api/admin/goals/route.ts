@@ -86,7 +86,7 @@ export async function PATCH(request: NextRequest) {
 
   // Gamification: award points when goal is marked completed
   if (body.status === 'completed' && goal?.patient_id) {
-    handleGoalCompleted(goal.patient_id).catch(console.error)
+    await handleGoalCompleted(goal.patient_id)
   }
   revalidatePath('/metas')
   return NextResponse.json(goal)

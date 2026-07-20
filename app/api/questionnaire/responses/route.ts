@@ -67,20 +67,22 @@ export async function POST(request: NextRequest) {
     if (updErr) console.error('Falha ao fechar schedule:', updErr)
   }
 
-  // Gamificação: pontua e atualiza streak (fire-and-forget, não bloqueia resposta)
-  const isLate = body.schedule_id
-    ? await (async () => {
-        const { data: sched } = await supabase
-          .from('questionnaire_schedule')
-          .select('due_date')
-          .eq('id', body.schedule_id!)
-          .maybeSingle()
-        if (!sched) return false
-        const today = new Date().toISOString().slice(0, 10)
-        return sched.due_date < today
-      })()
-    : false
-  handleQuestionnaireSubmission(body.patient_id, isLate).catch(console.error)
+  // Gamificação: pontua e atualiza streak — DEVE ser awaited
+  // Em Vercel serverless, fire-and-forget é cancelado quando o response é enviado
+  const admin = createAdminClient() as any
+  let isLate = false
+  if (body.schedule_id) {
+    const { data: sched } = await admin
+      .from('questionnaire_schedule')
+      .select('due_date')
+      .eq('id', body.schedule_id)
+      .maybeSingle()
+    if (sched) {
+      const today = new Date().toISOString().slice(0, 10)
+      isLate = sched.due_date < today
+    }
+  }
+  await handleQuestionnaireSubmission(body.patient_id, isLate)
 
   revalidatePath('/portal')
   revalidatePath('/progress')

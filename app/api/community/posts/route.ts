@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   })
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
-  handleCommunityPost(patient.id).catch(console.error)
+  await handleCommunityPost(patient.id)
   revalidatePath('/comunidade')
   return NextResponse.json({ ok: true }, { status: 201 })
 }
