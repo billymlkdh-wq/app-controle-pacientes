@@ -37,7 +37,7 @@ export function AvatarUpload({ name, avatarUrl }: Props) {
       <button
         onClick={() => inputRef.current?.click()}
         disabled={uploading}
-        className="absolute bottom-0 right-0 bg-pink-500 hover:bg-pink-600 rounded-full w-7 h-7 flex items-center justify-center shadow-lg transition-colors disabled:opacity-60"
+        className="absolute bottom-0 right-0 bg-yellow-500 hover:bg-yellow-600 rounded-full w-7 h-7 flex items-center justify-center shadow-lg transition-colors disabled:opacity-60"
       >
         <Camera className="h-3.5 w-3.5 text-white" />
       </button>

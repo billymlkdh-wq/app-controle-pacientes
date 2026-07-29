@@ -107,7 +107,7 @@ export function HabitTracker({ todayLogs, goals }: Props) {
           <div
             key={h.type}
             className={`rounded-2xl border p-4 space-y-3 ${
-              done ? 'bg-green-500/10 border-green-500/30' : 'bg-[#141528] border-[#1e2040]'
+              done ? 'bg-green-500/10 border-green-500/30' : 'bg-[#1a1610] border-[#2a2419]'
             }`}
           >
             {/* Header */}
@@ -118,23 +118,23 @@ export function HabitTracker({ todayLogs, goals }: Props) {
                   <CheckCircle2 className="h-3.5 w-3.5" /> Meta atingida!
                 </span>
               ) : (
-                <span className="text-[#4a5080] text-xs">
+                <span className="text-[#9a8c70] text-xs">
                   {logged}{unit ? ' ' + unit : ''} / {goalVal}{unit ? ' ' + unit : ''}
                 </span>
               )}
             </div>
 
             {/* Progress bar */}
-            <div className="h-1.5 bg-[#1e2040] rounded-full overflow-hidden">
+            <div className="h-1.5 bg-[#2a2419] rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all ${done ? 'bg-green-400' : 'bg-gradient-to-r from-pink-500 to-cyan-400'}`}
+                className={`h-full rounded-full transition-all ${done ? 'bg-green-400' : 'bg-gradient-to-r from-yellow-500 to-amber-300'}`}
                 style={{ width: `${pct}%` }}
               />
             </div>
 
             {/* Photo upload area (opcional) */}
             <div>
-              <p className="text-[10px] text-[#4a5080] uppercase tracking-wider mb-1.5">
+              <p className="text-[10px] text-[#9a8c70] uppercase tracking-wider mb-1.5">
                 📸 Foto opcional — {h.photoLabel}
               </p>
               {/* sem capture="environment" → abre seletor com opção câmera + galeria */}
@@ -146,7 +146,7 @@ export function HabitTracker({ todayLogs, goals }: Props) {
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) pickPhoto(h.type, f) }}
               />
               {preview ? (
-                <div className="relative w-full h-32 rounded-xl overflow-hidden border border-[#1e2040]">
+                <div className="relative w-full h-32 rounded-xl overflow-hidden border border-[#2a2419]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={preview} alt="preview" className="w-full h-full object-cover" />
                   <button
@@ -159,7 +159,7 @@ export function HabitTracker({ todayLogs, goals }: Props) {
               ) : (
                 <button
                   onClick={() => fileRefs.current[h.type]?.click()}
-                  className="w-full border-2 border-dashed border-[#2a2b50] hover:border-pink-500/30 rounded-xl py-3 flex flex-col items-center gap-1 text-[#4a5080] hover:text-pink-400 transition-colors"
+                  className="w-full border-2 border-dashed border-[#2a2b50] hover:border-yellow-500/30 rounded-xl py-3 flex flex-col items-center gap-1 text-[#9a8c70] hover:text-yellow-400 transition-colors"
                 >
                   <Camera className="h-4 w-4" />
                   <span className="text-xs">Adicionar foto (câmera ou galeria)</span>
@@ -177,12 +177,12 @@ export function HabitTracker({ todayLogs, goals }: Props) {
                   onChange={(e) => setValues((p) => ({ ...p, [h.type]: e.target.value }))}
                   step={h.step}
                   min={0}
-                  className="flex-1 bg-[#0b0c1a] border border-[#1e2040] rounded-xl px-3 py-2 text-sm text-white placeholder:text-[#4a5080] outline-none focus:border-pink-500/50"
+                  className="flex-1 bg-[#0f0d0a] border border-[#2a2419] rounded-xl px-3 py-2 text-sm text-white placeholder:text-[#9a8c70] outline-none focus:border-yellow-500/50"
                 />
                 <button
                   disabled={!values[h.type] || busy}
                   onClick={() => submit(h.type, parseFloat(values[h.type]))}
-                  className="bg-pink-500 hover:bg-pink-600 disabled:opacity-40 rounded-xl px-4 text-sm font-semibold text-white transition-colors flex items-center gap-1.5"
+                  className="bg-yellow-500 hover:bg-yellow-600 disabled:opacity-40 rounded-xl px-4 text-sm font-semibold text-white transition-colors flex items-center gap-1.5"
                 >
                   {busy ? '...' : <><Upload className="h-3.5 w-3.5" /> Registrar</>}
                 </button>
@@ -194,7 +194,7 @@ export function HabitTracker({ todayLogs, goals }: Props) {
                 className={`w-full rounded-xl py-2.5 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
                   done
                     ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                    : 'bg-pink-500 hover:bg-pink-600 disabled:opacity-40 text-white'
+                    : 'bg-yellow-500 hover:bg-yellow-600 disabled:opacity-40 text-white'
                 }`}
               >
                 {busy ? '...' : done ? '✓ Treino confirmado' : <><Upload className="h-3.5 w-3.5" /> Confirmar treino</>}
@@ -202,12 +202,12 @@ export function HabitTracker({ todayLogs, goals }: Props) {
             )}
 
             {/* Auto-post */}
-            <label className="flex items-center gap-2 text-xs text-[#4a5080] cursor-pointer">
+            <label className="flex items-center gap-2 text-xs text-[#9a8c70] cursor-pointer">
               <input
                 type="checkbox"
                 checked={autoPost[h.type] ?? false}
                 onChange={(e) => setAutoPost((p) => ({ ...p, [h.type]: e.target.checked }))}
-                className="rounded accent-pink-500"
+                className="rounded accent-yellow-500"
               />
               Compartilhar no feed da comunidade
             </label>

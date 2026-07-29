@@ -24,6 +24,15 @@ export default async function PatientLayout({ children }: { children: React.Reac
 
   const sex = (patient as any)?.sex as string | null
 
+  // Registra acesso ao app (base do card "sem interação" e do nudge WhatsApp)
+  if (patient?.id && !isAdmin) {
+    const { error: seenErr } = await db
+      .from('patients')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('id', patient.id)
+    if (seenErr) console.error('[last_seen] update FAILED', seenErr.message)
+  }
+
   let totalXP = 0
   let streak = 0
 
@@ -47,7 +56,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
   const firstName = patient?.name?.split(' ')[0] ?? 'Paciente'
 
   return (
-    <div className="min-h-screen bg-[#0b0c1a] text-white flex flex-col">
+    <div className="min-h-screen bg-[#0f0d0a] text-white flex flex-col">
       {/* Admin banner */}
       {isAdmin && (
         <div className="bg-yellow-500 text-yellow-950 text-xs font-medium text-center py-1.5 flex items-center justify-center gap-3 relative z-50">
@@ -57,15 +66,15 @@ export default async function PatientLayout({ children }: { children: React.Reac
       )}
 
       {/* Sticky header */}
-      <header className="sticky top-0 z-40 bg-[#0b0c1a]/95 backdrop-blur border-b border-[#1e2040] px-4 py-3">
+      <header className="sticky top-0 z-40 bg-[#0f0d0a]/95 backdrop-blur border-b border-[#2a2419] px-4 py-3">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <div>
-            <div className="text-[10px] text-[#4a5080] uppercase tracking-widest font-medium">
+            <div className="text-[10px] text-[#9a8c70] uppercase tracking-widest font-medium">
               Nutricionista Rafael
             </div>
             <div className="font-semibold text-sm">Bom dia, {firstName}! 👋</div>
           </div>
-          <div className="bg-[#141528] border border-[#1e2040] rounded-full px-3 py-1.5 text-xs flex items-center gap-1.5">
+          <div className="bg-[#1a1610] border border-[#2a2419] rounded-full px-3 py-1.5 text-xs flex items-center gap-1.5">
             <span>🔥</span>
             <span className="font-semibold text-orange-400">{streak} dias</span>
           </div>
@@ -73,25 +82,25 @@ export default async function PatientLayout({ children }: { children: React.Reac
       </header>
 
       {/* Level / XP bar */}
-      <div className="bg-[#141528] border-b border-[#1e2040] px-4 py-2.5">
+      <div className="bg-[#1a1610] border-b border-[#2a2419] px-4 py-2.5">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-xs font-bold tracking-wide">
               {currentLevel.emoji} {getLevelName(currentLevel, sex).toUpperCase()}
               {nextLevel && (
-                <span className="text-[#4a5080] font-normal"> → {getLevelName(nextLevel, sex)}</span>
+                <span className="text-[#9a8c70] font-normal"> → {getLevelName(nextLevel, sex)}</span>
               )}
             </span>
-            <span className="text-cyan-400 text-xs font-bold">{totalXP} XP</span>
+            <span className="text-yellow-400 text-xs font-bold">{totalXP} XP</span>
           </div>
-          <div className="h-1.5 bg-[#1e2040] rounded-full overflow-hidden">
+          <div className="h-1.5 bg-[#2a2419] rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-pink-500 to-cyan-400 transition-all duration-500"
+              className="h-full rounded-full bg-gradient-to-r from-yellow-500 to-amber-300 transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
           {nextLevel && (
-            <div className="text-[10px] text-[#4a5080] mt-1 text-right">
+            <div className="text-[10px] text-[#9a8c70] mt-1 text-right">
               {xpToNext} XP para {getLevelName(nextLevel, sex)}
             </div>
           )}

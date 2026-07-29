@@ -24,7 +24,7 @@ export function RankingPeriodTabs({ current }: { current: string }) {
             }}
             className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
               active
-                ? 'bg-pink-500 text-white shadow-[0_0_12px_rgba(236,72,153,0.4)]'
+                ? 'bg-yellow-500 text-black shadow-[0_0_12px_rgba(245,197,24,0.4)]'
                 : 'bg-[#1a1b30] text-[#8892b0] border border-[#2a2b50] hover:text-white'
             }`}
           >

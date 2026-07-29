@@ -15,7 +15,7 @@ function periodSince(period: string): Date | null {
 
 const MEDAL_COLORS = ['text-yellow-400', 'text-gray-300', 'text-amber-500']
 const MEDAL_RING   = ['ring-yellow-400', 'ring-gray-400',  'ring-amber-600']
-const MEDAL_BG     = ['bg-[#1e1a08] border-yellow-500/30', 'bg-[#141528] border-[#2a2b50]', 'bg-[#1a1208] border-[#2a2b50]']
+const MEDAL_BG     = ['bg-[#1e1a08] border-yellow-500/30', 'bg-[#1a1610] border-[#2a2b50]', 'bg-[#1a1208] border-[#2a2b50]']
 
 export default async function RankingPage({
   searchParams,
@@ -73,7 +73,7 @@ export default async function RankingPage({
 
   return (
     <div className="space-y-5">
-      <p className="text-[10px] text-[#4a5080] uppercase tracking-widest font-medium">Ranking Global</p>
+      <p className="text-[10px] text-[#9a8c70] uppercase tracking-widest font-medium">Ranking Global</p>
 
       <Suspense>
         <RankingPeriodTabs current={period} />
@@ -99,11 +99,11 @@ export default async function RankingPage({
                 <p className={`text-xs font-semibold text-center leading-tight ${elevated ? '' : 'text-[#c0c8e0]'}`}>
                   {r.name.split(' ')[0]}
                 </p>
-                <p className="text-[10px] text-[#4a5080]">{getLevelName(getLevel(r.totalXP), r.sex)}</p>
+                <p className="text-[10px] text-[#9a8c70]">{getLevelName(getLevel(r.totalXP), r.sex)}</p>
                 <div className={`w-full rounded-xl py-2 text-center border ${MEDAL_BG[rankIdx]}`}>
                   <div className={elevated ? 'text-xl' : 'text-base'}>{medals[rankIdx]}</div>
                   <div className={`font-bold ${elevated ? 'text-lg' : 'text-sm'} ${MEDAL_COLORS[rankIdx]}`}>{r.periodXP}</div>
-                  <div className="text-[9px] text-[#4a5080] uppercase tracking-wider">XP</div>
+                  <div className="text-[9px] text-[#9a8c70] uppercase tracking-wider">XP</div>
                 </div>
               </div>
             )
@@ -113,16 +113,16 @@ export default async function RankingPage({
 
       {/* My position if outside top 3 */}
       {myPos >= 3 && (
-        <div className="rounded-xl bg-pink-500/10 border border-pink-500/30 px-4 py-3 flex items-center gap-3">
-          <span className="text-pink-400 font-bold text-sm w-7">#{myPos + 1}</span>
+        <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/30 px-4 py-3 flex items-center gap-3">
+          <span className="text-yellow-400 font-bold text-sm w-7">#{myPos + 1}</span>
           <PatientAvatar name={ranking[myPos].name} avatarUrl={ranking[myPos].avatarUrl} size="sm" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold">Você</p>
-            <p className="text-[10px] text-[#4a5080]">
+            <p className="text-[10px] text-[#9a8c70]">
               {getLevel(ranking[myPos].totalXP).emoji} {getLevel(ranking[myPos].totalXP).name}
             </p>
           </div>
-          <span className="text-cyan-400 text-sm font-bold">{ranking[myPos].periodXP} XP</span>
+          <span className="text-yellow-400 text-sm font-bold">{ranking[myPos].periodXP} XP</span>
         </div>
       )}
 
@@ -136,18 +136,18 @@ export default async function RankingPage({
               <div
                 key={r.id}
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${
-                  isMe ? 'bg-pink-500/10 border-pink-500/30' : 'bg-[#141528] border-[#1e2040]'
+                  isMe ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-[#1a1610] border-[#2a2419]'
                 }`}
               >
-                <span className="text-[#4a5080] text-sm font-medium w-7">#{pos}</span>
+                <span className="text-[#9a8c70] text-sm font-medium w-7">#{pos}</span>
                 <PatientAvatar name={r.name} avatarUrl={r.avatarUrl} size="sm" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">{isMe ? 'Você' : r.name.split(' ')[0]}</p>
-                  <p className="text-[10px] text-[#4a5080]">
+                  <p className="text-[10px] text-[#9a8c70]">
                     {getLevel(r.totalXP).emoji} {getLevelName(getLevel(r.totalXP), r.sex)}
                   </p>
                 </div>
-                <span className="text-cyan-400 text-sm font-bold">{r.periodXP} XP</span>
+                <span className="text-yellow-400 text-sm font-bold">{r.periodXP} XP</span>
               </div>
             )
           })}
@@ -155,7 +155,7 @@ export default async function RankingPage({
       )}
 
       {ranking.length === 0 && (
-        <div className="text-center py-12 text-[#4a5080] text-sm">
+        <div className="text-center py-12 text-[#9a8c70] text-sm">
           Nenhum dado ainda. Registre seus hábitos!
         </div>
       )}

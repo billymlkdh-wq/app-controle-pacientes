@@ -77,7 +77,7 @@ export default async function DashboardPage({
       .lt('due_date', d2ago),
     admin.from('payments').select('id', { count: 'exact', head: true }).eq('status', 'atrasado'),
     admin.from('payments').select('amount, date').eq('status', 'pago').gte('date', start12mISO),
-    admin.from('patients').select('id, name, phone, created_at, active, updated_at'),
+    admin.from('patients').select('id, name, phone, created_at, active, updated_at, last_seen_at'),
     admin.from('plan_contracts').select('plan_type, status'),
     admin.from('plan_contracts').select('plan_type, total_value')
       .gte('start_date', firstOfMonth).lt('start_date', firstOfNextMonth),
@@ -119,24 +119,30 @@ export default async function DashboardPage({
   }
 
   // Set de IDs de pacientes ATIVOS — base para todos os filtros
-  type PatRow = { id: string; name: string; phone: string; created_at: string; active: boolean; updated_at: string | null }
+  type PatRow = { id: string; name: string; phone: string; created_at: string; active: boolean; updated_at: string | null; last_seen_at: string | null }
   const pats = (patientsAll.data ?? []) as PatRow[]
-  const activePatientIds = new Set(pats.filter(p => p.active).map(p => p.id))
+  const activePatients = pats.filter(p => p.active)
+  const activePatientIds = new Set(activePatients.map(p => p.id))
 
   // Filtrar responderam: apenas pacientes ativos
   for (const id of [...respondidasMap.keys()]) {
     if (!activePatientIds.has(id)) respondidasMap.delete(id)
   }
 
-  // Não responderam: dedup por patient_id, excluindo quem já respondeu, apenas ativos
-  const pendingMap = new Map<string, { name: string; phone: string; due_date: string }>()
+  // Não responderam = TODOS os ativos que não responderam no ciclo atual
+  // (garante responderam + não responderam = total de ativos)
+  const dueDateByPatient = new Map<string, string>()
   for (const s of (pendingSchedulesRaw.data ?? [])) {
-    if (!pendingMap.has(s.patient_id) && !respondidasMap.has(s.patient_id) && activePatientIds.has(s.patient_id))
-      pendingMap.set(s.patient_id, {
-        name: s.patients?.name ?? 'N/A',
-        phone: s.patients?.phone ?? '',
-        due_date: s.due_date,
-      })
+    if (!dueDateByPatient.has(s.patient_id)) dueDateByPatient.set(s.patient_id, s.due_date)
+  }
+  const pendingMap = new Map<string, { name: string; phone: string; due_date: string }>()
+  for (const p of activePatients) {
+    if (respondidasMap.has(p.id)) continue
+    pendingMap.set(p.id, {
+      name: p.name,
+      phone: p.phone ?? '',
+      due_date: dueDateByPatient.get(p.id) ?? '',
+    })
   }
 
   // Vencimento próximo (apenas ativos)
@@ -144,13 +150,16 @@ export default async function DashboardPage({
   const upcomingPayments = ((upcomingPaymentsRaw.data ?? []) as PayRow[])
     .filter(p => activePatientIds.has(p.patient_id))
 
-  // Inativos: pacientes ativos sem nenhuma atividade nos últimos 7 dias
+  // Inativos: ativos sem acesso ao app (last_seen_at) E sem nenhuma interação nos últimos 7 dias
   const recentlyActiveIds = new Set([
     ...(recentHabitsRaw.data ?? []).map((r: any) => r.patient_id as string),
     ...(recentRespRaw.data   ?? []).map((r: any) => r.patient_id as string),
     ...(recentPostsRaw.data  ?? []).map((r: any) => r.patient_id as string),
   ])
-  const inactivePatients = pats.filter(p => p.active && !recentlyActiveIds.has(p.id))
+  const inactivePatients = activePatients.filter(p =>
+    !recentlyActiveIds.has(p.id) &&
+    (!p.last_seen_at || p.last_seen_at < d7agoISO)
+  )
 
   // ── Faturamento ──────────────────────────────────────────────────────────
   const revenue = ((paymentsMonth.data ?? []) as Array<{ amount: number | string | null }>)
@@ -346,7 +355,7 @@ export default async function DashboardPage({
                             <Link href={`/patients/${id}`} className="hover:underline font-medium">{p.name}</Link>
                           </td>
                           <td className="py-2 pr-4 text-muted-foreground">{p.phone || '—'}</td>
-                          <td className="py-2 text-amber-600 font-medium">{formatDateBR(p.due_date)}</td>
+                          <td className="py-2 text-amber-600 font-medium">{p.due_date ? formatDateBR(p.due_date) : '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -363,7 +372,8 @@ export default async function DashboardPage({
                     <thead>
                       <tr className="border-b text-muted-foreground text-left">
                         <th className="py-2 pr-4">Nome</th>
-                        <th className="py-2">Contato</th>
+                        <th className="py-2 pr-4">Contato</th>
+                        <th className="py-2">Último acesso</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -372,7 +382,10 @@ export default async function DashboardPage({
                           <td className="py-2 pr-4">
                             <Link href={`/patients/${p.id}`} className="hover:underline font-medium">{p.name}</Link>
                           </td>
-                          <td className="py-2 text-muted-foreground">{p.phone || '—'}</td>
+                          <td className="py-2 pr-4 text-muted-foreground">{p.phone || '—'}</td>
+                          <td className="py-2 text-muted-foreground">
+                            {p.last_seen_at ? formatDateBR(p.last_seen_at.slice(0, 10)) : 'nunca'}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
