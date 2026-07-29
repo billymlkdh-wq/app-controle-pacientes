@@ -77,7 +77,7 @@ export default async function DashboardPage({
       .lt('due_date', d2ago),
     admin.from('payments').select('id', { count: 'exact', head: true }).eq('status', 'atrasado'),
     admin.from('payments').select('amount, date').eq('status', 'pago').gte('date', start12mISO),
-    admin.from('patients').select('id, name, phone, created_at, active, updated_at, last_seen_at'),
+    admin.from('patients').select('id, name, phone, created_at, active, updated_at'),
     admin.from('plan_contracts').select('plan_type, status'),
     admin.from('plan_contracts').select('plan_type, total_value')
       .gte('start_date', firstOfMonth).lt('start_date', firstOfNextMonth),
@@ -106,6 +106,21 @@ export default async function DashboardPage({
     admin.from('community_posts').select('patient_id').gte('created_at', d7agoISO),
   ])
 
+  // last_seen_at em query separada: se a migration 0014 ainda não rodou,
+  // o erro não pode derrubar o resto do dashboard
+  const lastSeenMap = new Map<string, string>()
+  {
+    const { data: seenRows, error: seenErr } = await admin
+      .from('patients').select('id, last_seen_at')
+    if (seenErr) {
+      console.error('[dashboard] last_seen_at indisponível (migration 0014 pendente?)', seenErr.message)
+    } else {
+      for (const r of (seenRows ?? [])) {
+        if (r.last_seen_at) lastSeenMap.set(r.id, r.last_seen_at)
+      }
+    }
+  }
+
   // ── Processa insights ────────────────────────────────────────────────────
   // Responderam: dedup por patient_id (mais recente primeiro)
   const respondidasMap = new Map<string, { name: string; phone: string; created_at: string }>()
@@ -119,7 +134,7 @@ export default async function DashboardPage({
   }
 
   // Set de IDs de pacientes ATIVOS — base para todos os filtros
-  type PatRow = { id: string; name: string; phone: string; created_at: string; active: boolean; updated_at: string | null; last_seen_at: string | null }
+  type PatRow = { id: string; name: string; phone: string; created_at: string; active: boolean; updated_at: string | null }
   const pats = (patientsAll.data ?? []) as PatRow[]
   const activePatients = pats.filter(p => p.active)
   const activePatientIds = new Set(activePatients.map(p => p.id))
@@ -156,10 +171,10 @@ export default async function DashboardPage({
     ...(recentRespRaw.data   ?? []).map((r: any) => r.patient_id as string),
     ...(recentPostsRaw.data  ?? []).map((r: any) => r.patient_id as string),
   ])
-  const inactivePatients = activePatients.filter(p =>
-    !recentlyActiveIds.has(p.id) &&
-    (!p.last_seen_at || p.last_seen_at < d7agoISO)
-  )
+  const inactivePatients = activePatients.filter(p => {
+    const lastSeen = lastSeenMap.get(p.id)
+    return !recentlyActiveIds.has(p.id) && (!lastSeen || lastSeen < d7agoISO)
+  })
 
   // ── Faturamento ──────────────────────────────────────────────────────────
   const revenue = ((paymentsMonth.data ?? []) as Array<{ amount: number | string | null }>)
@@ -384,7 +399,7 @@ export default async function DashboardPage({
                           </td>
                           <td className="py-2 pr-4 text-muted-foreground">{p.phone || '—'}</td>
                           <td className="py-2 text-muted-foreground">
-                            {p.last_seen_at ? formatDateBR(p.last_seen_at.slice(0, 10)) : 'nunca'}
+                            {lastSeenMap.get(p.id) ? formatDateBR(lastSeenMap.get(p.id)!.slice(0, 10)) : 'nunca'}
                           </td>
                         </tr>
                       ))}

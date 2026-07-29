@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const d7agoISO = d7ago.toISOString()
   const d7agoDate = d7agoISO.slice(0, 10)
 
-  const [{ data: patients }, habits, resps, posts] = await Promise.all([
+  const [{ data: patients, error: patErr }, habits, resps, posts] = await Promise.all([
     db.from('patients')
       .select('id, name, phone, last_seen_at, last_nudge_at')
       .eq('active', true),
@@ -27,6 +27,11 @@ export async function GET(req: NextRequest) {
     db.from('questionnaire_responses').select('patient_id').gte('created_at', d7agoISO),
     db.from('community_posts').select('patient_id').gte('created_at', d7agoISO),
   ])
+
+  if (patErr) {
+    console.error('[inactivity-nudge] patients query FAILED (migration 0014 pendente?)', patErr.message)
+    return NextResponse.json({ ok: false, error: patErr.message }, { status: 500 })
+  }
 
   const recentlyActive = new Set([
     ...(habits.data ?? []).map((r: any) => r.patient_id as string),
