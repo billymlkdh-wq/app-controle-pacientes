@@ -118,10 +118,20 @@ export default async function DashboardPage({
       })
   }
 
-  // Não responderam: dedup por patient_id, excluindo quem já respondeu
+  // Set de IDs de pacientes ATIVOS — base para todos os filtros
+  type PatRow = { id: string; name: string; phone: string; created_at: string; active: boolean; updated_at: string | null }
+  const pats = (patientsAll.data ?? []) as PatRow[]
+  const activePatientIds = new Set(pats.filter(p => p.active).map(p => p.id))
+
+  // Filtrar responderam: apenas pacientes ativos
+  for (const id of [...respondidasMap.keys()]) {
+    if (!activePatientIds.has(id)) respondidasMap.delete(id)
+  }
+
+  // Não responderam: dedup por patient_id, excluindo quem já respondeu, apenas ativos
   const pendingMap = new Map<string, { name: string; phone: string; due_date: string }>()
   for (const s of (pendingSchedulesRaw.data ?? [])) {
-    if (!pendingMap.has(s.patient_id) && !respondidasMap.has(s.patient_id))
+    if (!pendingMap.has(s.patient_id) && !respondidasMap.has(s.patient_id) && activePatientIds.has(s.patient_id))
       pendingMap.set(s.patient_id, {
         name: s.patients?.name ?? 'N/A',
         phone: s.patients?.phone ?? '',
@@ -129,19 +139,18 @@ export default async function DashboardPage({
       })
   }
 
-  // Vencimento próximo
+  // Vencimento próximo (apenas ativos)
   type PayRow = { patient_id: string; due_date: string; amount: number; status: string; patients: { name: string; phone: string } }
-  const upcomingPayments = (upcomingPaymentsRaw.data ?? []) as PayRow[]
+  const upcomingPayments = ((upcomingPaymentsRaw.data ?? []) as PayRow[])
+    .filter(p => activePatientIds.has(p.patient_id))
 
   // Inativos: pacientes ativos sem nenhuma atividade nos últimos 7 dias
-  const activeIds = new Set([
+  const recentlyActiveIds = new Set([
     ...(recentHabitsRaw.data ?? []).map((r: any) => r.patient_id as string),
     ...(recentRespRaw.data   ?? []).map((r: any) => r.patient_id as string),
     ...(recentPostsRaw.data  ?? []).map((r: any) => r.patient_id as string),
   ])
-  type PatRow = { id: string; name: string; phone: string; created_at: string; active: boolean; updated_at: string | null }
-  const pats = (patientsAll.data ?? []) as PatRow[]
-  const inactivePatients = pats.filter(p => p.active && !activeIds.has(p.id))
+  const inactivePatients = pats.filter(p => p.active && !recentlyActiveIds.has(p.id))
 
   // ── Faturamento ──────────────────────────────────────────────────────────
   const revenue = ((paymentsMonth.data ?? []) as Array<{ amount: number | string | null }>)
