@@ -18,19 +18,24 @@ export default async function PatientLayout({ children }: { children: React.Reac
 
   const { data: patient } = await db
     .from('patients')
-    .select('id, name, sex')
+    .select('id, name, sex, last_seen_at')
     .eq('user_id', user.id)
     .maybeSingle()
 
   const sex = (patient as any)?.sex as string | null
 
-  // Registra acesso ao app (base do card "sem interação" e do nudge WhatsApp)
+  // Registra acesso ao app (base do card "sem interação" e do nudge WhatsApp).
+  // Só grava se o último registro tem mais de 15 min — evita um UPDATE por clique.
   if (patient?.id && !isAdmin) {
-    const { error: seenErr } = await db
-      .from('patients')
-      .update({ last_seen_at: new Date().toISOString() })
-      .eq('id', patient.id)
-    if (seenErr) console.error('[last_seen] update FAILED', seenErr.message)
+    const last = (patient as any)?.last_seen_at as string | null
+    const stale = !last || Date.now() - new Date(last).getTime() > 15 * 60 * 1000
+    if (stale) {
+      const { error: seenErr } = await db
+        .from('patients')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('id', patient.id)
+      if (seenErr) console.error('[last_seen] update FAILED', seenErr.message)
+    }
   }
 
   let totalXP = 0

@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
   const [{ data: patients, error: patErr }, habits, resps, posts] = await Promise.all([
     db.from('patients')
-      .select('id, name, phone, last_seen_at, last_nudge_at')
+      .select('id, name, phone, whatsapp_phone, last_seen_at, last_nudge_at')
       .eq('active', true),
     db.from('patient_habit_logs').select('patient_id').gte('logged_date', d7agoDate),
     db.from('questionnaire_responses').select('patient_id').gte('created_at', d7agoISO),
@@ -43,9 +43,13 @@ export async function GET(req: NextRequest) {
   let sent = 0
 
   for (const p of (patients ?? []) as any[]) {
-    const isInactive =
-      !recentlyActive.has(p.id) &&
-      (!p.last_seen_at || p.last_seen_at < d7agoISO)
+    // last_seen_at nulo = nunca registramos acesso (paciente anterior ao tracking).
+    // Sem prova de inatividade não cutucamos ninguém — evita disparo em massa.
+    if (!p.last_seen_at) {
+      results.push({ patient_id: p.id, status: 'sem_last_seen' })
+      continue
+    }
+    const isInactive = !recentlyActive.has(p.id) && p.last_seen_at < d7agoISO
     if (!isInactive) continue
 
     // No máximo 1 nudge a cada 7 dias
@@ -54,7 +58,8 @@ export async function GET(req: NextRequest) {
       continue
     }
 
-    if (!p.phone) {
+    const phone = p.whatsapp_phone ?? p.phone ?? null
+    if (!phone) {
       results.push({ patient_id: p.id, status: 'sem_telefone' })
       continue
     }
@@ -69,7 +74,7 @@ export async function GET(req: NextRequest) {
       `Qualquer dificuldade me chama por aqui que a gente resolve junto. 💪`
 
     try {
-      const result = await sendWhatsAppText({ to: p.phone, message })
+      const result = await sendWhatsAppText({ to: phone, message })
       if (result.ok) {
         sent++
         const { error: updErr } = await db
