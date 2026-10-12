@@ -3,7 +3,7 @@
 // Cada submissão mostra todas as perguntas+respostas daquela data.
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -68,6 +68,22 @@ export default async function PatientResponsesPage({
     .order('created_at', { ascending: false })
 
   const responses = (responsesData ?? []) as unknown as ResponseRow[]
+
+  // media_urls guarda o CAMINHO no bucket privado, não uma URL — assina para abrir
+  const mediaPaths = [...new Set(
+    responses.flatMap((r) => (Array.isArray(r.media_urls) ? r.media_urls : []))
+      .filter((p): p is string => typeof p === 'string' && p.length > 0),
+  )]
+  const signedMedia = new Map<string, string>()
+  if (mediaPaths.length > 0) {
+    const admin = createAdminClient() as any
+    const { data: signed, error: signErr } = await admin
+      .storage.from('questionnaire-media').createSignedUrls(mediaPaths, 60 * 60)
+    if (signErr) console.error('[questionnaires] createSignedUrls FAILED', signErr.message)
+    for (const s of (signed ?? []) as Array<{ path: string | null; signedUrl: string | null }>) {
+      if (s.path && s.signedUrl) signedMedia.set(s.path, s.signedUrl)
+    }
+  }
 
   // Agrupa por ciclo (schedule_id ou data)
   const submissionsMap = new Map<string, { key: string; date: string; items: ResponseRow[] }>()
@@ -211,17 +227,21 @@ export default async function PatientResponsesPage({
                         </div>
                         {r.media_urls && r.media_urls.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-2">
-                            {r.media_urls.map((u, i) => (
-                              <a
-                                key={i}
-                                href={u}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-xs text-primary hover:underline"
-                              >
-                                mídia {i + 1}
-                              </a>
-                            ))}
+                            {r.media_urls.map((u, i) => {
+                              const href = signedMedia.get(u)
+                              if (!href) return null
+                              return (
+                                <a
+                                  key={i}
+                                  href={href}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-xs text-primary hover:underline"
+                                >
+                                  mídia {i + 1}
+                                </a>
+                              )
+                            })}
                           </div>
                         )}
                       </div>
