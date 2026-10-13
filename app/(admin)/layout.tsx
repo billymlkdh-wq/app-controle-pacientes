@@ -43,10 +43,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           ))}
         </nav>
         <div className="p-3 border-t space-y-2">
-          <Link href="/api/admin/enter-patient-view" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-yellow-600 hover:bg-yellow-500/10 hover:text-yellow-500 border border-yellow-500/30">
-            <Eye className="h-4 w-4" />
-            Ver como paciente
-          </Link>
+          {/* POST, não Link: o Next faz prefetch de <Link> e dispararia a rota sozinho */}
+          <form action="/api/admin/enter-patient-view" method="post">
+            <button
+              type="submit"
+              className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm text-yellow-600 hover:bg-yellow-500/10 hover:text-yellow-500 border border-yellow-500/30"
+            >
+              <Eye className="h-4 w-4" />
+              Ver como paciente
+            </button>
+          </form>
           <form action="/auth/logout" method="post">
             <Button type="submit" variant="outline" size="sm" className="w-full">Sair</Button>
           </form>

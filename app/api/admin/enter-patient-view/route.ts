@@ -3,13 +3,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/server'
 
-export async function GET(request: NextRequest) {
+// POST — cria registro e grava cookie, então muda estado. Como GET, o prefetch
+// de <Link> do Next executava a rota sem clique do usuário.
+export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.redirect(new URL('/auth/login', request.url))
+  if (!user) return NextResponse.redirect(new URL('/auth/login', request.url), 303)
 
   const role = (user.user_metadata as any)?.role
-  if (role !== 'admin') return NextResponse.redirect(new URL('/portal', request.url))
+  if (role !== 'admin') return NextResponse.redirect(new URL('/portal', request.url), 303)
 
   const admin = createAdminClient() as any
 
@@ -29,7 +31,7 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  const res = NextResponse.redirect(new URL('/portal', request.url))
+  const res = NextResponse.redirect(new URL('/portal', request.url), 303)
   res.cookies.set('admin_patient_mode', '1', { path: '/', httpOnly: true, sameSite: 'lax' })
   return res
 }

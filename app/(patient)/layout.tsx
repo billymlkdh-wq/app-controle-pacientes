@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/server'
@@ -66,7 +65,11 @@ export default async function PatientLayout({ children }: { children: React.Reac
       {isAdmin && (
         <div className="bg-yellow-500 text-yellow-950 text-xs font-medium text-center py-1.5 flex items-center justify-center gap-3 relative z-50">
           <span>👁 Modo paciente</span>
-          <Link href="/api/admin/exit-patient-view" className="underline font-bold">← Voltar ao admin</Link>
+          {/* POST, não Link: o prefetch do <Link> chamava a rota sozinho e
+              derrubava o modo paciente antes de qualquer clique */}
+          <form action="/api/admin/exit-patient-view" method="post" className="inline">
+            <button type="submit" className="underline font-bold">← Voltar ao admin</button>
+          </form>
         </div>
       )}
 
