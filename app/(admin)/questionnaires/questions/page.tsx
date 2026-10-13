@@ -17,6 +17,7 @@ type Question = {
   options: string[] | null
   is_numeric_chart: boolean
   allow_media: boolean
+  require_media: boolean
   active: boolean
 }
 
@@ -38,6 +39,7 @@ function emptyDraft(nextOrder: number): Draft {
     options: null,
     is_numeric_chart: false,
     allow_media: false,
+    require_media: false,
     active: true,
   }
 }
@@ -78,6 +80,7 @@ export default function QuestionsPage() {
       options: needsOptions ? editing.options : null,
       is_numeric_chart: editing.is_numeric_chart,
       allow_media: editing.allow_media,
+      require_media: editing.require_media,
       active: editing.active,
     }
     const url = editing.id ? `/api/questionnaire/${editing.id}` : '/api/questionnaire'
@@ -152,8 +155,19 @@ export default function QuestionsPage() {
               <div className="flex flex-col gap-2 justify-end">
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={editing.allow_media}
-                    onChange={(e) => setEditing({ ...editing, allow_media: e.target.checked })} />
+                    onChange={(e) => setEditing({
+                      ...editing,
+                      allow_media: e.target.checked,
+                      // Sem anexo permitido não há como exigir anexo
+                      require_media: e.target.checked ? editing.require_media : false,
+                    })} />
                   Permitir anexar fotos/vídeos
+                </label>
+                <label className={`flex items-center gap-2 text-sm ${editing.allow_media ? '' : 'opacity-50'}`}>
+                  <input type="checkbox" checked={editing.require_media}
+                    disabled={!editing.allow_media}
+                    onChange={(e) => setEditing({ ...editing, require_media: e.target.checked })} />
+                  Exigir foto para enviar o questionário
                 </label>
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={editing.is_numeric_chart}
@@ -201,6 +215,7 @@ export default function QuestionsPage() {
                     <Badge variant="outline">{QUESTION_TYPE_LABEL[q.question_type] ?? q.question_type}</Badge>
                     {q.is_numeric_chart && <Badge variant="default">Gráfico</Badge>}
                     {q.allow_media && <Badge variant="secondary">Anexos</Badge>}
+                    {q.require_media && <Badge variant="warning">Foto obrigatória</Badge>}
                     {!q.active && <Badge variant="secondary">Inativa</Badge>}
                   </div>
                 </CardTitle>

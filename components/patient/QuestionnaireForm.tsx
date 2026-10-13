@@ -36,6 +36,7 @@ type Question = {
   image_url: string | null
   is_numeric_chart: boolean
   allow_media: boolean
+  require_media: boolean
   options: string[] | ScaleOptions | null
 }
 
@@ -123,6 +124,8 @@ export function QuestionnaireForm({
   const router = useRouter()
   const supabase = React.useMemo(() => createClient(), [])
   const [loading, setLoading] = React.useState(false)
+  // Perguntas que travaram o envio por falta de foto obrigatória
+  const [missingIds, setMissingIds] = React.useState<Set<string>>(new Set())
   const [state, setState] = React.useState<Record<string, ResponseState>>(() => {
     const init: Record<string, ResponseState> = {}
     for (const q of questions) {
@@ -170,6 +173,13 @@ export function QuestionnaireForm({
         ...prev,
         [qid]: { ...prev[qid], mediaUrls: [...prev[qid].mediaUrls, ...uploadedUrls], uploading: false },
       }))
+      // Anexou: some o destaque de pendência nessa pergunta
+      setMissingIds((prev) => {
+        if (!prev.has(qid)) return prev
+        const next = new Set(prev)
+        next.delete(qid)
+        return next
+      })
       toast.success(`${uploadedUrls.length} arquivo(s) enviado(s)`)
     } catch (err) {
       console.error(err)
@@ -187,6 +197,31 @@ export function QuestionnaireForm({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    // Fotos obrigatórias: bloqueia o envio e aponta quais perguntas faltam
+    const missingMedia = questions.filter(
+      (q) => q.require_media && (state[q.id]?.mediaUrls.length ?? 0) === 0,
+    )
+    if (missingMedia.length > 0) {
+      setMissingIds(new Set(missingMedia.map((q) => q.id)))
+      toast.error(
+        missingMedia.length === 1
+          ? 'Anexe a foto pedida para enviar o questionário'
+          : `Faltam fotos em ${missingMedia.length} perguntas`,
+      )
+      document
+        .getElementById(`q-${missingMedia[0].id}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+    setMissingIds(new Set())
+
+    // Espera uploads em andamento antes de enviar
+    if (Object.values(state).some((s) => s.uploading)) {
+      toast.error('Aguarde o envio das fotos terminar')
+      return
+    }
+
     setLoading(true)
     const answerable = questions.filter((q) => q.question_type !== 'section')
     const responses = answerable.map((q) => {
@@ -255,7 +290,13 @@ export function QuestionnaireForm({
           : []
 
         return (
-          <div key={q.id} className="rounded-md border p-4 space-y-3">
+          <div
+            key={q.id}
+            id={`q-${q.id}`}
+            className={`rounded-md border p-4 space-y-3 ${
+              missingIds.has(q.id) ? 'border-destructive ring-1 ring-destructive/40' : ''
+            }`}
+          >
             {/* Image (above question text) */}
             {q.image_url && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -353,9 +394,15 @@ export function QuestionnaireForm({
             {/* ── Media upload ── */}
             {q.allow_media && (
               <div className="space-y-2 pt-1">
-                <Label className="text-sm text-muted-foreground">
-                  Anexar fotos/vídeos (até {MAX_FILES}, 25MB cada)
+                <Label className={`text-sm ${q.require_media ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                  {q.require_media ? 'Anexar foto' : 'Anexar fotos/vídeos'} (até {MAX_FILES}, 25MB cada)
+                  {q.require_media && <span className="text-destructive ml-1">*</span>}
                 </Label>
+                {q.require_media && s.mediaUrls.length === 0 && (
+                  <p className={`text-xs ${missingIds.has(q.id) ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                    Obrigatório — o questionário só pode ser enviado com a foto anexada.
+                  </p>
+                )}
                 <Input
                   type="file"
                   accept="image/*,video/*"

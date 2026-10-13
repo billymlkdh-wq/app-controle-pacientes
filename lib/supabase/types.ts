@@ -108,6 +108,7 @@ export type Database = {
           options: Json | null
           is_numeric_chart: boolean
           allow_media: boolean
+          require_media: boolean
           active: boolean
           created_at: string
         }

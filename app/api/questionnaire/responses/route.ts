@@ -41,6 +41,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Payload inválido' }, { status: 400 })
   }
 
+  // Fotos obrigatórias — o bloqueio do formulário é conveniência, a garantia é aqui
+  {
+    const checker = createAdminClient() as any
+    const { data: required, error: reqErr } = await checker
+      .from('questionnaire_questions')
+      .select('id, question_text')
+      .eq('require_media', true)
+      .eq('active', true)
+
+    if (reqErr) {
+      console.error('[responses] require_media check FAILED', reqErr.message)
+    } else if ((required ?? []).length > 0) {
+      const sentMedia = new Map<string, number>()
+      for (const r of body.responses) {
+        sentMedia.set(r.question_id, (r.media_urls ?? []).length)
+      }
+      const faltando = (required as Array<{ id: string; question_text: string }>)
+        .filter((q) => sentMedia.has(q.id) && (sentMedia.get(q.id) ?? 0) === 0)
+      if (faltando.length > 0) {
+        return NextResponse.json({
+          error: 'Foto obrigatória não enviada',
+          perguntas: faltando.map((q) => q.question_text),
+        }, { status: 400 })
+      }
+    }
+  }
+
   const rows = body.responses.map((r) => ({
     patient_id: body.patient_id,
     question_id: r.question_id,
