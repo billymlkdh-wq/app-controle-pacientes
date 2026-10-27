@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
-  const role = (user.user_metadata as { role?: string } | null)?.role
+  const role = (user.app_metadata as { role?: string } | null)?.role
   if (role !== 'admin') redirect('/portal')
 
   const links = [

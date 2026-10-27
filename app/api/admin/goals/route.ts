@@ -4,8 +4,8 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { handleGoalCompleted } from '@/lib/gamification'
 import { revalidatePath } from 'next/cache'
 
-function assertAdmin(user: { user_metadata?: { role?: string } } | null) {
-  return (user?.user_metadata as { role?: string } | undefined)?.role === 'admin'
+function assertAdmin(user: { app_metadata?: { role?: string } } | null) {
+  return (user?.app_metadata as { role?: string } | undefined)?.role === 'admin'
 }
 
 export async function GET(request: NextRequest) {

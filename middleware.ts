@@ -24,7 +24,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  const role = (user.user_metadata as { role?: string } | null)?.role
+  const role = (user.app_metadata as { role?: string } | null)?.role
 
   if (ADMIN_PREFIXES.some((p) => pathname.startsWith(p)) && role !== 'admin') {
     return NextResponse.redirect(new URL('/portal', request.url))

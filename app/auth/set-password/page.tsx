@@ -36,7 +36,7 @@ export default function SetPasswordPage() {
     toast.success('Senha definida! Redirecionando...')
     // Role decide o destino
     const { data: { user } } = await supabase.auth.getUser()
-    const role = (user?.user_metadata as { role?: string } | null)?.role
+    const role = (user?.app_metadata as { role?: string } | null)?.role
     // Fallback: garante vínculo patients.user_id ↔ auth.uid (caso trigger SQL não tenha rodado)
     if (role !== 'admin') {
       await fetch('/api/auth/link-patient', { method: 'POST' }).catch(() => {})

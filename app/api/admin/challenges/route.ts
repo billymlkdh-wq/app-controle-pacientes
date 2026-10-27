@@ -7,7 +7,7 @@ async function requireAdmin() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const role = (user.user_metadata as any)?.role
+  const role = (user.app_metadata as any)?.role
   return role === 'admin' ? user : null
 }
 

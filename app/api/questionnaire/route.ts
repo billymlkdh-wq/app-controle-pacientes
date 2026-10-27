@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const role = (user.user_metadata as { role?: string } | null)?.role
+  const role = (user.app_metadata as { role?: string } | null)?.role
   if (role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const body = await request.json()
   const { data, error } = await supabase.from('questionnaire_questions').insert(body).select().single()

@@ -28,7 +28,7 @@ export default function LoginPage() {
       const supabase = createClient()
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
-      const role = (data.user?.user_metadata as { role?: string } | null)?.role
+      const role = (data.user?.app_metadata as { role?: string } | null)?.role
       toast.success('Bem-vindo!')
       router.push(role === 'admin' ? '/dashboard' : '/portal')
       router.refresh()

@@ -10,7 +10,7 @@ export default async function PatientLayout({ children }: { children: React.Reac
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const role = (user.user_metadata as any)?.role
+  const role = (user.app_metadata as any)?.role
   const isAdmin = role === 'admin'
 
   const db = createAdminClient() as any

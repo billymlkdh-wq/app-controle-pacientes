@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.redirect(new URL('/auth/login', request.url), 303)
 
-  const role = (user.user_metadata as any)?.role
+  const role = (user.app_metadata as any)?.role
   if (role !== 'admin') return NextResponse.redirect(new URL('/portal', request.url), 303)
 
   const admin = createAdminClient() as any

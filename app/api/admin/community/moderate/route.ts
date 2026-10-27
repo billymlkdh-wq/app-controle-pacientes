@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 export async function PATCH(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const role = (user?.user_metadata as { role?: string } | null)?.role
+  const role = (user?.app_metadata as { role?: string } | null)?.role
   if (!user || role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id, is_visible } = await request.json() as { id?: string; is_visible?: boolean }
