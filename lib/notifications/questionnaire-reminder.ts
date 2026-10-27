@@ -27,3 +27,22 @@ export function buildReminderMessage({
   }
   return `${firstName}, já são ${daysLate} dias sem responder o questionário. Preciso acompanhar sua evolução: ${portalLink}`
 }
+
+/**
+ * Normaliza para o formato que o wa.me exige: só dígitos, com código do país.
+ * Aceita tanto número já internacional (5551999990000) quanto local com DDD
+ * (51999990000), que é como parte da base está cadastrada.
+ */
+export function normalizePhoneForWa(raw: string): string | null {
+  const digits = (raw || '').replace(/\D/g, '')
+  if (digits.length === 10 || digits.length === 11) return `55${digits}` // DDD + número
+  if (digits.length >= 12 && digits.length <= 13) return digits          // já tem o 55
+  return digits.length >= 10 ? digits : null
+}
+
+/** Link "Click to Chat" oficial: abre a conversa com o texto já preenchido. */
+export function buildWaLink(phone: string, message: string): string | null {
+  const normalized = normalizePhoneForWa(phone)
+  if (!normalized) return null
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`
+}
