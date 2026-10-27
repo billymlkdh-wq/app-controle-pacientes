@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
-import { Search, Send, Eye, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react'
+import { Search, Send, Eye, ArrowUp, ArrowDown, ChevronsUpDown, MessageCircle, Loader2 } from 'lucide-react'
 import { formatBRL } from '@/lib/utils'
 
 export type PatientRow = {
@@ -45,6 +45,9 @@ export function PatientsTable({ patients, pendingCount }: Props) {
   const [sortKey, setSortKey] = React.useState<SortKey>('name')
   const [sortDir, setSortDir] = React.useState<SortDir>('asc')
   const [togglingId, setTogglingId] = React.useState<string | null>(null)
+  const [remindingId, setRemindingId] = React.useState<string | null>(null)
+  // Quem já recebeu lembrete nesta sessão — evita mandar duas vezes sem perceber
+  const [remindedIds, setRemindedIds] = React.useState<Set<string>>(new Set())
   // Estado otimista: id -> active. Some quando o refresh do servidor confirma.
   const [optimisticActive, setOptimisticActive] = React.useState<Record<string, boolean>>({})
   const [result, setResult] = React.useState<{
@@ -136,6 +139,24 @@ export function PatientsTable({ patients, pendingCount }: Props) {
       toast.error(err.message ?? 'Erro ao atualizar status')
     } finally {
       setTogglingId(null)
+    }
+  }
+
+  async function sendOneReminder(p: PatientRow) {
+    const phone = p.whatsapp_phone ?? p.phone
+    if (!confirm(`Enviar lembrete de questionário para ${p.name} no WhatsApp ${phone}?`)) return
+
+    setRemindingId(p.id)
+    try {
+      const res = await fetch(`/api/patients/${p.id}/questionnaire-reminder`, { method: 'POST' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Erro ao enviar')
+      setRemindedIds((prev) => new Set(prev).add(p.id))
+      toast.success(`Lembrete enviado para ${p.name}`)
+    } catch (err: any) {
+      toast.error(err.message ?? 'Erro ao enviar lembrete')
+    } finally {
+      setRemindingId(null)
     }
   }
 
@@ -296,13 +317,43 @@ export function PatientsTable({ patients, pendingCount }: Props) {
                   </td>
 
                   {/* Ações */}
-                  <td className="px-4 py-3 text-right">
-                    <Button asChild variant="ghost" size="sm">
-                      <Link href={`/patients/${p.id}`}>
-                        <Eye className="h-3.5 w-3.5 mr-1" />
-                        Ver
-                      </Link>
-                    </Button>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-1">
+                      {(() => {
+                        const pending = active && p.questionnaire_status === 'pending'
+                        const hasPhone = Boolean(p.whatsapp_phone ?? p.phone)
+                        const busy = remindingId === p.id
+                        const done = remindedIds.has(p.id)
+                        const title = !pending
+                          ? 'Sem questionário pendente'
+                          : !hasPhone
+                            ? 'Paciente sem telefone cadastrado'
+                            : done
+                              ? 'Lembrete já enviado agora há pouco'
+                              : 'Enviar lembrete no WhatsApp'
+                        return (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title={title}
+                            aria-label={title}
+                            disabled={!pending || !hasPhone || busy}
+                            onClick={() => sendOneReminder(p)}
+                            className={done ? 'text-emerald-600' : pending && hasPhone ? 'text-green-600' : ''}
+                          >
+                            {busy
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <MessageCircle className="h-3.5 w-3.5" />}
+                          </Button>
+                        )
+                      })()}
+                      <Button asChild variant="ghost" size="sm">
+                        <Link href={`/patients/${p.id}`}>
+                          <Eye className="h-3.5 w-3.5 mr-1" />
+                          Ver
+                        </Link>
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               )

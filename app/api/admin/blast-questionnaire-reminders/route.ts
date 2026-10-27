@@ -3,6 +3,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendWhatsAppText } from '@/lib/notifications/whatsapp'
+import { buildReminderMessage } from '@/lib/notifications/questionnaire-reminder'
 import { todayBR } from '@/lib/utils'
 
 type PatientRow = { id: string; name: string; whatsapp_phone: string | null; phone: string | null }
@@ -71,17 +72,12 @@ export async function POST(request: NextRequest) {
       continue
     }
 
-    const daysLate = Math.max(
-      0,
-      Math.floor((new Date(today).getTime() - new Date(s.due_date).getTime()) / 86_400_000),
-    )
-
-    const firstName = (p.name || '').split(/\s+/)[0] || p.name
-    const message = daysLate === 0
-      ? `Oi ${firstName}! Seu questionário quinzenal está disponível. Responde aqui quando puder: ${portalLink}`
-      : daysLate === 1
-        ? `${firstName}, seu questionário venceu ontem. Leva 2 minutos: ${portalLink}`
-        : `${firstName}, já são ${daysLate} dias sem responder o questionário. Preciso acompanhar sua evolução: ${portalLink}`
+    const message = buildReminderMessage({
+      name: p.name,
+      dueDate: s.due_date,
+      today,
+      portalLink,
+    })
 
     try {
       const result = await sendWhatsAppText({ to: phone, message })
