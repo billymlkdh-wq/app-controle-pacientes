@@ -36,6 +36,7 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
         <Link href={`/patients/${id}/progress`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Evolução</Link>
         <Link href={`/patients/${id}/appointments`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Consultas</Link>
         <Link href={`/patients/${id}/financial`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Financeiro</Link>
+        <Link href={`/patients/${id}/meal-plan`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Plano alimentar</Link>
         <UnlockQuestionnaireButton patientId={id} />
       </div>
 
