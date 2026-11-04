@@ -17,7 +17,7 @@ export default async function MealPlanEditorPage({
     supabase.from('meal_plans').select('*').eq('id', planId).single(),
     supabase
       .from('meal_plan_meals')
-      .select('id, name, time_hhmm, order_num, notes, items:meal_plan_items(id, food_id, custom_description, quantity_g, household_measure, energy_kcal, protein_g, lipid_g, carb_g, fiber_g, order_num, food:food_catalog(description, source))')
+      .select('id, name, time_hhmm, order_num, notes, items:meal_plan_items(id, food_id, custom_description, quantity_g, household_measure, measure_label, measure_grams, measure_qty, energy_kcal, protein_g, lipid_g, carb_g, fiber_g, order_num, food:food_catalog(description, source, household_measures))')
       .eq('plan_id', planId)
       .order('order_num'),
   ])
@@ -39,8 +39,12 @@ export default async function MealPlanEditorPage({
       custom_description: i.custom_description,
       food_description: i.food?.description ?? null,
       food_source: i.food?.source ?? null,
+      food_measures: Array.isArray(i.food?.household_measures) ? i.food.household_measures : [],
       quantity_g: Number(i.quantity_g ?? 0),
       household_measure: i.household_measure,
+      measure_label: i.measure_label ?? null,
+      measure_grams: i.measure_grams != null ? Number(i.measure_grams) : null,
+      measure_qty: i.measure_qty != null ? Number(i.measure_qty) : 0,
       energy_kcal: i.energy_kcal != null ? Number(i.energy_kcal) : null,
       protein_g: i.protein_g != null ? Number(i.protein_g) : null,
       lipid_g: i.lipid_g != null ? Number(i.lipid_g) : null,

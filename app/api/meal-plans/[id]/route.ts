@@ -25,6 +25,9 @@ type Snapshot = {
       custom_description?: string | null
       quantity_g: number
       household_measure?: string | null
+      measure_label?: string | null
+      measure_grams?: number | null
+      measure_qty?: number | null
       energy_kcal?: number | null
       protein_g?: number | null
       lipid_g?: number | null
@@ -93,6 +96,9 @@ export async function PATCH(
           custom_description: it.custom_description ?? null,
           quantity_g: it.quantity_g,
           household_measure: it.household_measure ?? null,
+          measure_label: it.measure_label ?? null,
+          measure_grams: it.measure_grams ?? null,
+          measure_qty: it.measure_qty ?? null,
           energy_kcal: it.energy_kcal ?? null,
           protein_g: it.protein_g ?? null,
           lipid_g: it.lipid_g ?? null,

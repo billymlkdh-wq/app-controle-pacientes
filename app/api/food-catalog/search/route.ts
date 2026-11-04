@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from('food_catalog')
-    .select('id, source, description, category, energy_kcal, protein_g, lipid_g, carb_g, fiber_g, sodium_mg, needs_nutrition_scrape')
+    .select('id, source, description, category, energy_kcal, protein_g, lipid_g, carb_g, fiber_g, sodium_mg, household_measures, needs_nutrition_scrape')
     .ilike('description', `%${q}%`)
     .eq('active', true)
     .limit(limit)

@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 
+type Measure = { label: string; grams: number }
 type Food = {
   id: number
   source: 'TACO' | 'TBCA' | 'CUSTOM'
@@ -21,6 +22,7 @@ type Food = {
   lipid_g: number | null
   carb_g: number | null
   fiber_g: number | null
+  household_measures: Measure[] | null
   needs_nutrition_scrape: boolean
 }
 
@@ -30,14 +32,22 @@ type Item = {
   custom_description: string | null
   food_description?: string | null   // display only
   food_source?: string | null
+  food_measures?: Measure[]          // display only — carregado ao selecionar
+  // Peso real em gramas (snapshot). Base de cálculo.
   quantity_g: number
-  household_measure: string | null
+  // Medida caseira (ex: "Porção", "Xícara"): label + gramas/unidade
+  measure_label: string | null
+  measure_grams: number | null
+  measure_qty: number                // nº de unidades da medida
+  // Macros scaled (snapshot)
   energy_kcal: number | null
   protein_g: number | null
   lipid_g: number | null
   carb_g: number | null
   fiber_g: number | null
   order_num: number
+  // Legado — mantém pra compat com schema
+  household_measure: string | null
 }
 
 type Meal = {
@@ -63,15 +73,30 @@ type Plan = {
   active: boolean
 }
 
+const DEFAULT_MEASURES: Measure[] = [
+  { label: 'grama(s)', grams: 1 },
+  { label: 'Porção', grams: 100 },
+]
+
+function measuresOf(food: Food | null | undefined): Measure[] {
+  const custom = food?.household_measures ?? []
+  const merged: Measure[] = [...DEFAULT_MEASURES]
+  for (const m of custom) {
+    if (!merged.some((x) => x.label.toLowerCase() === m.label.toLowerCase())) merged.push(m)
+  }
+  return merged
+}
+
 function emptyItem(order: number): Item {
   return {
     food_id: null, custom_description: null, quantity_g: 0,
+    measure_label: null, measure_grams: null, measure_qty: 0,
     household_measure: null, energy_kcal: 0, protein_g: 0,
     lipid_g: 0, carb_g: 0, fiber_g: 0, order_num: order,
   }
 }
 
-function scaleFood(food: Food, grams: number): Partial<Item> {
+function scaleFromGrams(food: Food, grams: number): Partial<Item> {
   const factor = grams / 100
   return {
     energy_kcal: food.energy_kcal != null ? +(food.energy_kcal * factor).toFixed(1) : null,
@@ -363,6 +388,9 @@ function ItemRow({
   const [query, setQuery] = React.useState(item.food_description ?? item.custom_description ?? '')
   const [results, setResults] = React.useState<Food[]>([])
   const [showDrop, setShowDrop] = React.useState(false)
+  const [creatingMeasure, setCreatingMeasure] = React.useState(false)
+  const [newMeasureLabel, setNewMeasureLabel] = React.useState('')
+  const [newMeasureGrams, setNewMeasureGrams] = React.useState('')
   const debounceRef = React.useRef<NodeJS.Timeout | null>(null)
 
   React.useEffect(() => {
@@ -377,48 +405,127 @@ function ItemRow({
   }, [query, item.food_id])
 
   function pickFood(food: Food) {
-    const scaled = scaleFood(food, 100)
+    const measures = measuresOf(food)
+    const defaultMeasure = measures.find((m) => m.label === 'Porção') ?? measures[0]
+    const qty = 1
+    const grams = defaultMeasure.grams * qty
+    const scaled = scaleFromGrams(food, grams)
     onChange({
       food_id: food.id,
       food_description: food.description,
       food_source: food.source,
+      food_measures: food.household_measures ?? [],
       custom_description: null,
-      quantity_g: 100,
+      quantity_g: grams,
+      measure_label: defaultMeasure.label,
+      measure_grams: defaultMeasure.grams,
+      measure_qty: qty,
+      household_measure: `${qty} ${defaultMeasure.label}`,
       ...scaled,
     })
     setQuery(food.description)
     setShowDrop(false)
   }
 
-  function onQuantityChange(g: number) {
-    // Recalcula com base no snapshot do food original (não temos — reusa ratio atual)
-    if (item.food_id && item.quantity_g > 0 && item.energy_kcal != null) {
-      const ratio = g / item.quantity_g
-      onChange({
-        quantity_g: g,
+  function scaleItem(newGrams: number) {
+    // Recalcula macros do snapshot atual proporcionalmente
+    if (item.quantity_g > 0 && item.energy_kcal != null) {
+      const ratio = newGrams / item.quantity_g
+      return {
+        quantity_g: +newGrams.toFixed(2),
         energy_kcal: +(item.energy_kcal * ratio).toFixed(1),
         protein_g: item.protein_g != null ? +(item.protein_g * ratio).toFixed(2) : null,
         lipid_g: item.lipid_g != null ? +(item.lipid_g * ratio).toFixed(2) : null,
         carb_g: item.carb_g != null ? +(item.carb_g * ratio).toFixed(2) : null,
         fiber_g: item.fiber_g != null ? +(item.fiber_g * ratio).toFixed(2) : null,
+      }
+    }
+    return { quantity_g: +newGrams.toFixed(2) }
+  }
+
+  function onQtyChange(qty: number) {
+    const grams = (item.measure_grams ?? 1) * qty
+    onChange({
+      measure_qty: qty,
+      household_measure: item.measure_label ? `${qty} ${item.measure_label}` : null,
+      ...scaleItem(grams),
+    })
+  }
+
+  function onMeasureChange(label: string) {
+    if (label === '__custom__') { setCreatingMeasure(true); return }
+    const measures = [...DEFAULT_MEASURES, ...(item.food_measures ?? [])]
+    const m = measures.find((x) => x.label === label)
+    if (!m) return
+    const qty = item.measure_qty || 1
+    const grams = m.grams * qty
+    onChange({
+      measure_label: m.label,
+      measure_grams: m.grams,
+      measure_qty: qty,
+      household_measure: `${qty} ${m.label}`,
+      ...scaleItem(grams),
+    })
+  }
+
+  function onGramsDirectChange(g: number) {
+    onChange({
+      measure_qty: item.measure_grams ? +(g / item.measure_grams).toFixed(2) : 0,
+      household_measure: item.measure_label ? `${(g / (item.measure_grams ?? 1)).toFixed(1)} ${item.measure_label}` : null,
+      ...scaleItem(g),
+    })
+  }
+
+  async function createMeasure() {
+    if (!item.food_id) return
+    const label = newMeasureLabel.trim()
+    const grams = Number(newMeasureGrams)
+    if (!label || !(grams > 0)) return
+    try {
+      const r = await fetch(`/api/food-catalog/${item.food_id}/measures`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label, grams }),
       })
-    } else {
-      onChange({ quantity_g: g })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error ?? 'Erro')
+      // Atualiza local + aplica
+      const updated = [...(item.food_measures ?? []), { label, grams }]
+      onChange({ food_measures: updated })
+      // Seleciona a nova
+      const qty = item.measure_qty || 1
+      onChange({
+        food_measures: updated,
+        measure_label: label,
+        measure_grams: grams,
+        measure_qty: qty,
+        household_measure: `${qty} ${label}`,
+        ...scaleItem(grams * qty),
+      })
+      setCreatingMeasure(false)
+      setNewMeasureLabel('')
+      setNewMeasureGrams('')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao criar medida')
     }
   }
 
   function clearFood() {
     onChange({
-      food_id: null, food_description: null, food_source: null,
+      food_id: null, food_description: null, food_source: null, food_measures: [],
+      measure_label: null, measure_grams: null, measure_qty: 0,
       energy_kcal: 0, protein_g: 0, lipid_g: 0, carb_g: 0, fiber_g: 0,
     })
     setQuery('')
   }
 
+  const measures = measuresOf(item.food_id ? { household_measures: item.food_measures ?? null } as Food : null)
+
   return (
     <div className="border rounded-md p-2 space-y-2">
       <div className="flex gap-2 items-start flex-wrap">
-        <div className="flex-1 min-w-[200px] relative">
+        {/* Busca / nome */}
+        <div className="flex-1 min-w-[220px] relative">
           <Input
             value={query}
             onChange={(e) => {
@@ -429,10 +536,10 @@ function ItemRow({
             }}
             onFocus={() => setShowDrop(true)}
             onBlur={() => setTimeout(() => setShowDrop(false), 200)}
-            placeholder="Busque alimento ou escreva livre"
+            placeholder="Busque alimento TACO/TBCA ou texto livre"
           />
           {showDrop && results.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full max-h-64 overflow-y-auto border rounded-md bg-popover shadow-lg">
+            <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto border rounded-md bg-background shadow-xl">
               {results.map((f) => (
                 <button key={f.id} type="button"
                   className="block w-full text-left px-3 py-2 text-sm hover:bg-accent"
@@ -446,20 +553,59 @@ function ItemRow({
             </div>
           )}
           {item.food_source && (
-            <div className="text-xs text-muted-foreground mt-1">
-              Base: {item.food_source}
-            </div>
+            <div className="text-xs text-muted-foreground mt-1">Base: {item.food_source}</div>
           )}
         </div>
-        <Input className="w-24" type="number" value={item.quantity_g}
-          onChange={(e) => onQuantityChange(Number(e.target.value))}
-          placeholder="gramas" />
-        <Input className="w-32" value={item.household_measure ?? ''}
-          onChange={(e) => onChange({ household_measure: e.target.value || null })}
-          placeholder="medida caseira" />
+
+        {/* Quantidade (unidades da medida) */}
+        <Input className="w-16" type="number" step="0.5" min="0"
+          value={item.measure_qty || ''}
+          onChange={(e) => onQtyChange(Number(e.target.value))}
+          placeholder="qtd" disabled={!item.food_id} />
+
+        {/* Dropdown medida caseira */}
+        <select
+          className="h-10 rounded-md border bg-background px-2 text-sm w-40 disabled:opacity-50"
+          value={item.measure_label ?? ''}
+          onChange={(e) => onMeasureChange(e.target.value)}
+          disabled={!item.food_id}
+        >
+          {!item.measure_label && <option value="">—</option>}
+          {measures.map((m) => (
+            <option key={m.label} value={m.label}>
+              {m.label} ({m.grams}g)
+            </option>
+          ))}
+          {item.food_id && <option value="__custom__">+ Nova medida personalizada…</option>}
+        </select>
+
+        {/* Peso em gramas (editável, recalcula qty) */}
+        <Input className="w-20" type="number" min="0" step="1"
+          value={item.quantity_g ? +item.quantity_g.toFixed(1) : ''}
+          onChange={(e) => onGramsDirectChange(Number(e.target.value))}
+          placeholder="gramas" disabled={!item.food_id && !item.custom_description} />
+
         <Button variant="outline" size="sm" onClick={onRemove}>×</Button>
       </div>
-      <div className="text-xs text-muted-foreground grid grid-cols-5 gap-2">
+
+      {/* Criador de medida personalizada inline */}
+      {creatingMeasure && (
+        <div className="flex gap-2 items-center bg-muted/40 p-2 rounded-md flex-wrap">
+          <Input className="w-40" placeholder="Nome (ex: colher sopa)"
+            value={newMeasureLabel} onChange={(e) => setNewMeasureLabel(e.target.value)} autoFocus />
+          <Input className="w-28" type="number" placeholder="gramas"
+            value={newMeasureGrams} onChange={(e) => setNewMeasureGrams(e.target.value)} />
+          <Button size="sm" onClick={createMeasure}>Salvar medida</Button>
+          <Button size="sm" variant="outline" onClick={() => setCreatingMeasure(false)}>Cancelar</Button>
+          <span className="text-xs text-muted-foreground">
+            Fica salva no alimento pra próximas prescrições
+          </span>
+        </div>
+      )}
+
+      {/* Macros + resumo */}
+      <div className="text-xs text-muted-foreground grid grid-cols-6 gap-2">
+        <span className="font-semibold text-foreground">{(item.quantity_g ?? 0).toFixed(0)}g</span>
         <span>{(item.energy_kcal ?? 0).toFixed(0)} kcal</span>
         <span>P {(item.protein_g ?? 0).toFixed(1)}g</span>
         <span>L {(item.lipid_g ?? 0).toFixed(1)}g</span>
