@@ -29,9 +29,11 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Ordena: TACO primeiro (dados completos), depois match exato, depois alfabético
+  // Ordena por fonte (TACO > Tucunduva > TBCA > CUSTOM), match exato, alfabético
+  const SOURCE_RANK: Record<string, number> = { TACO: 1, TUCUNDUVA: 2, TBCA: 3, CUSTOM: 4 }
   const items = (data ?? []).sort((a, b) => {
-    if (a.source !== b.source) return a.source === 'TACO' ? -1 : 1
+    const sr = (SOURCE_RANK[a.source] ?? 99) - (SOURCE_RANK[b.source] ?? 99)
+    if (sr !== 0) return sr
     const qLow = q.toLowerCase()
     const aStart = a.description.toLowerCase().startsWith(qLow)
     const bStart = b.description.toLowerCase().startsWith(qLow)

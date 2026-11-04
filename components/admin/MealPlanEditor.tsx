@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge'
 type Measure = { label: string; grams: number }
 type Food = {
   id: number
-  source: 'TACO' | 'TBCA' | 'CUSTOM'
+  source: 'TACO' | 'TBCA' | 'TUCUNDUVA' | 'CUSTOM'
   description: string
   category: string | null
   energy_kcal: number | null
