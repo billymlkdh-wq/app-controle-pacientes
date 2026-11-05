@@ -34,6 +34,21 @@ type Snapshot = {
       carb_g?: number | null
       fiber_g?: number | null
       order_num: number
+      substitutes?: Array<{
+        food_id?: number | null
+        custom_description?: string | null
+        quantity_g: number
+        household_measure?: string | null
+        measure_label?: string | null
+        measure_grams?: number | null
+        measure_qty?: number | null
+        energy_kcal?: number | null
+        protein_g?: number | null
+        lipid_g?: number | null
+        carb_g?: number | null
+        fiber_g?: number | null
+        order_num: number
+      }>
     }>
   }>
 }
@@ -89,25 +104,52 @@ export async function PATCH(
         .single()
       if (mErr) return NextResponse.json({ error: mErr.message }, { status: 400 })
 
-      if (meal.items.length > 0) {
-        const rows = meal.items.map((it) => ({
-          meal_id: newMeal.id,
-          food_id: it.food_id ?? null,
-          custom_description: it.custom_description ?? null,
-          quantity_g: it.quantity_g,
-          household_measure: it.household_measure ?? null,
-          measure_label: it.measure_label ?? null,
-          measure_grams: it.measure_grams ?? null,
-          measure_qty: it.measure_qty ?? null,
-          energy_kcal: it.energy_kcal ?? null,
-          protein_g: it.protein_g ?? null,
-          lipid_g: it.lipid_g ?? null,
-          carb_g: it.carb_g ?? null,
-          fiber_g: it.fiber_g ?? null,
-          order_num: it.order_num,
-        }))
-        const { error: itErr } = await supabase.from('meal_plan_items').insert(rows)
+      for (const it of meal.items) {
+        const { data: newItem, error: itErr } = await supabase
+          .from('meal_plan_items')
+          .insert({
+            meal_id: newMeal.id,
+            food_id: it.food_id ?? null,
+            custom_description: it.custom_description ?? null,
+            quantity_g: it.quantity_g,
+            household_measure: it.household_measure ?? null,
+            measure_label: it.measure_label ?? null,
+            measure_grams: it.measure_grams ?? null,
+            measure_qty: it.measure_qty ?? null,
+            energy_kcal: it.energy_kcal ?? null,
+            protein_g: it.protein_g ?? null,
+            lipid_g: it.lipid_g ?? null,
+            carb_g: it.carb_g ?? null,
+            fiber_g: it.fiber_g ?? null,
+            order_num: it.order_num,
+          })
+          .select()
+          .single()
         if (itErr) return NextResponse.json({ error: itErr.message }, { status: 400 })
+
+        // Substitutos — opções equivalentes que o paciente pode trocar
+        if (it.substitutes && it.substitutes.length > 0) {
+          const subRows = it.substitutes.map((s) => ({
+            item_id: newItem.id,
+            food_id: s.food_id ?? null,
+            custom_description: s.custom_description ?? null,
+            quantity_g: s.quantity_g,
+            household_measure: s.household_measure ?? null,
+            measure_label: s.measure_label ?? null,
+            measure_grams: s.measure_grams ?? null,
+            measure_qty: s.measure_qty ?? null,
+            energy_kcal: s.energy_kcal ?? null,
+            protein_g: s.protein_g ?? null,
+            lipid_g: s.lipid_g ?? null,
+            carb_g: s.carb_g ?? null,
+            fiber_g: s.fiber_g ?? null,
+            order_num: s.order_num,
+          }))
+          const { error: subErr } = await supabase
+            .from('meal_plan_item_substitutes')
+            .insert(subRows)
+          if (subErr) return NextResponse.json({ error: subErr.message }, { status: 400 })
+        }
       }
     }
   }

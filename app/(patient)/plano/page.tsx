@@ -37,7 +37,7 @@ export default async function PatientPlanoPage() {
 
   const { data: meals } = await supabase
     .from('meal_plan_meals')
-    .select('id, name, time_hhmm, order_num, notes, items:meal_plan_items(id, food_id, custom_description, quantity_g, household_measure, energy_kcal, protein_g, lipid_g, carb_g, fiber_g, order_num, food:food_catalog(description))')
+    .select('id, name, time_hhmm, order_num, notes, items:meal_plan_items(id, food_id, custom_description, quantity_g, household_measure, energy_kcal, protein_g, lipid_g, carb_g, fiber_g, order_num, food:food_catalog(description), substitutes:meal_plan_item_substitutes(id, food_id, custom_description, quantity_g, household_measure, order_num, food:food_catalog(description)))')
     .eq('plan_id', plan.id)
     .order('order_num')
 
@@ -103,18 +103,38 @@ export default async function PatientPlanoPage() {
                 <CardContent className="space-y-2">
                   {sortedItems.length === 0 ? (
                     <p className="text-xs text-[#9a8c70]">Sem itens.</p>
-                  ) : sortedItems.map((it: any) => (
-                    <div key={it.id} className="text-sm border-l-2 border-[#2a2419] pl-3">
-                      <div className="font-medium">
-                        {it.food?.description ?? it.custom_description ?? '—'}
+                  ) : sortedItems.map((it: any) => {
+                    const subs = [...((it.substitutes ?? []) as any[])].sort((a: any, b: any) => a.order_num - b.order_num)
+                    return (
+                      <div key={it.id} className="text-sm border-l-2 border-[#2a2419] pl-3">
+                        <div className="font-medium">
+                          {it.food?.description ?? it.custom_description ?? '—'}
+                        </div>
+                        <div className="text-xs text-[#9a8c70]">
+                          {Number(it.quantity_g).toFixed(0)} g
+                          {it.household_measure && ` · ${it.household_measure}`}
+                          {it.energy_kcal != null && ` · ${Number(it.energy_kcal).toFixed(0)} kcal`}
+                        </div>
+                        {subs.length > 0 && (
+                          <div className="mt-1 ml-2 space-y-0.5 border-l border-[#2a2419] pl-2">
+                            <div className="text-[10px] uppercase tracking-wider text-[#9a8c70]">
+                              ou substituir por
+                            </div>
+                            {subs.map((s: any) => (
+                              <div key={s.id} className="text-xs text-[#d4c89a]">
+                                <span className="text-[#9a8c70] mr-1">↔</span>
+                                {s.food?.description ?? s.custom_description ?? '—'}
+                                <span className="text-[#9a8c70]">
+                                  {' — '}{Number(s.quantity_g).toFixed(0)} g
+                                  {s.household_measure && ` · ${s.household_measure}`}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-xs text-[#9a8c70]">
-                        {Number(it.quantity_g).toFixed(0)} g
-                        {it.household_measure && ` · ${it.household_measure}`}
-                        {it.energy_kcal != null && ` · ${Number(it.energy_kcal).toFixed(0)} kcal`}
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                   {m.notes && (
                     <p className="text-xs italic text-[#9a8c70] mt-2">{m.notes}</p>
                   )}

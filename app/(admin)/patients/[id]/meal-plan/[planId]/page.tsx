@@ -17,7 +17,7 @@ export default async function MealPlanEditorPage({
     supabase.from('meal_plans').select('*').eq('id', planId).single(),
     supabase
       .from('meal_plan_meals')
-      .select('id, name, time_hhmm, order_num, notes, items:meal_plan_items(id, food_id, custom_description, quantity_g, household_measure, measure_label, measure_grams, measure_qty, energy_kcal, protein_g, lipid_g, carb_g, fiber_g, order_num, food:food_catalog(description, source, household_measures))')
+      .select('id, name, time_hhmm, order_num, notes, items:meal_plan_items(id, food_id, custom_description, quantity_g, household_measure, measure_label, measure_grams, measure_qty, energy_kcal, protein_g, lipid_g, carb_g, fiber_g, order_num, food:food_catalog(description, source, household_measures), substitutes:meal_plan_item_substitutes(id, food_id, custom_description, quantity_g, household_measure, measure_label, measure_grams, measure_qty, energy_kcal, protein_g, lipid_g, carb_g, fiber_g, order_num, food:food_catalog(description, source, household_measures)))')
       .eq('plan_id', planId)
       .order('order_num'),
   ])
@@ -51,6 +51,24 @@ export default async function MealPlanEditorPage({
       carb_g: i.carb_g != null ? Number(i.carb_g) : null,
       fiber_g: i.fiber_g != null ? Number(i.fiber_g) : null,
       order_num: i.order_num,
+      substitutes: (i.substitutes ?? []).sort((a: any, b: any) => a.order_num - b.order_num).map((s: any) => ({
+        food_id: s.food_id,
+        custom_description: s.custom_description,
+        food_description: s.food?.description ?? null,
+        food_source: s.food?.source ?? null,
+        food_measures: Array.isArray(s.food?.household_measures) ? s.food.household_measures : [],
+        quantity_g: Number(s.quantity_g ?? 0),
+        household_measure: s.household_measure,
+        measure_label: s.measure_label ?? null,
+        measure_grams: s.measure_grams != null ? Number(s.measure_grams) : null,
+        measure_qty: s.measure_qty != null ? Number(s.measure_qty) : 0,
+        energy_kcal: s.energy_kcal != null ? Number(s.energy_kcal) : null,
+        protein_g: s.protein_g != null ? Number(s.protein_g) : null,
+        lipid_g: s.lipid_g != null ? Number(s.lipid_g) : null,
+        carb_g: s.carb_g != null ? Number(s.carb_g) : null,
+        fiber_g: s.fiber_g != null ? Number(s.fiber_g) : null,
+        order_num: s.order_num,
+      })),
     })),
   }))
 

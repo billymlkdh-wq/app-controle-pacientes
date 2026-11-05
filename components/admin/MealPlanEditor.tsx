@@ -26,6 +26,25 @@ type Food = {
   needs_nutrition_scrape: boolean
 }
 
+type Substitute = {
+  food_id: number | null
+  custom_description: string | null
+  food_description?: string | null
+  food_source?: string | null
+  food_measures?: Measure[]
+  quantity_g: number
+  household_measure: string | null
+  measure_label: string | null
+  measure_grams: number | null
+  measure_qty: number
+  energy_kcal: number | null
+  protein_g: number | null
+  lipid_g: number | null
+  carb_g: number | null
+  fiber_g: number | null
+  order_num: number
+}
+
 type Item = {
   id?: string
   food_id: number | null
@@ -48,6 +67,8 @@ type Item = {
   order_num: number
   // Legado — mantém pra compat com schema
   household_measure: string | null
+  // Substitutos (opções equivalentes que o paciente pode escolher)
+  substitutes: Substitute[]
 }
 
 type Meal = {
@@ -93,6 +114,15 @@ function emptyItem(order: number): Item {
     measure_label: null, measure_grams: null, measure_qty: 0,
     household_measure: null, energy_kcal: 0, protein_g: 0,
     lipid_g: 0, carb_g: 0, fiber_g: 0, order_num: order,
+    substitutes: [],
+  }
+}
+
+function emptySubstitute(order: number): Substitute {
+  return {
+    food_id: null, custom_description: null, quantity_g: 0,
+    household_measure: null, measure_label: null, measure_grams: null, measure_qty: 0,
+    energy_kcal: 0, protein_g: 0, lipid_g: 0, carb_g: 0, fiber_g: 0, order_num: order,
   }
 }
 
@@ -385,6 +415,23 @@ function ItemRow({
   onChange: (p: Partial<Item>) => void
   onRemove: () => void
 }) {
+  const [showSubs, setShowSubs] = React.useState((item.substitutes?.length ?? 0) > 0)
+
+  function addSub() {
+    const subs = [...(item.substitutes ?? []), emptySubstitute((item.substitutes ?? []).length)]
+    onChange({ substitutes: subs })
+    setShowSubs(true)
+  }
+  function updateSub(idx: number, patch: Partial<Substitute>) {
+    const subs = (item.substitutes ?? []).map((s, i) => i === idx ? { ...s, ...patch } : s)
+    onChange({ substitutes: subs })
+  }
+  function removeSub(idx: number) {
+    const subs = (item.substitutes ?? []).filter((_, i) => i !== idx).map((s, i) => ({ ...s, order_num: i }))
+    onChange({ substitutes: subs })
+    if (subs.length === 0) setShowSubs(false)
+  }
+
   const [query, setQuery] = React.useState(item.food_description ?? item.custom_description ?? '')
   const [results, setResults] = React.useState<Food[]>([])
   const [showDrop, setShowDrop] = React.useState(false)
@@ -612,6 +659,193 @@ function ItemRow({
         <span>L {(item.lipid_g ?? 0).toFixed(1)}g</span>
         <span>C {(item.carb_g ?? 0).toFixed(1)}g</span>
         <span>F {(item.fiber_g ?? 0).toFixed(1)}g</span>
+      </div>
+
+      {/* Substitutos — opções de troca pro paciente */}
+      {item.food_id && (
+        <div className="pt-2 border-t">
+          <div className="flex items-center justify-between mb-1">
+            <button type="button"
+              className="text-xs text-primary hover:underline"
+              onClick={() => setShowSubs((v) => !v)}>
+              {showSubs ? '▾' : '▸'} Substituições ({item.substitutes?.length ?? 0})
+            </button>
+            {showSubs && (
+              <Button variant="outline" size="sm" onClick={addSub}>+ opção</Button>
+            )}
+          </div>
+          {showSubs && (
+            <div className="space-y-2 pl-3 border-l-2 border-muted">
+              {(item.substitutes ?? []).length === 0 ? (
+                <p className="text-xs text-muted-foreground py-1">
+                  Nenhuma opção. Clique em &quot;+ opção&quot; pra adicionar alternativas que o paciente pode escolher.
+                </p>
+              ) : (
+                (item.substitutes ?? []).map((sub, si) => (
+                  <SubstituteRow
+                    key={si}
+                    sub={sub}
+                    onChange={(p) => updateSub(si, p)}
+                    onRemove={() => removeSub(si)}
+                  />
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SubstituteRow({
+  sub, onChange, onRemove,
+}: {
+  sub: Substitute
+  onChange: (p: Partial<Substitute>) => void
+  onRemove: () => void
+}) {
+  const [query, setQuery] = React.useState(sub.food_description ?? sub.custom_description ?? '')
+  const [results, setResults] = React.useState<Food[]>([])
+  const [showDrop, setShowDrop] = React.useState(false)
+  const debounceRef = React.useRef<NodeJS.Timeout | null>(null)
+
+  React.useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    const t = query.trim()
+    if (t.length < 1 || sub.food_id) { setResults([]); return }
+    debounceRef.current = setTimeout(async () => {
+      const r = await fetch(`/api/food-catalog/search?q=${encodeURIComponent(t)}&only_with_nutrition=1&limit=10`)
+      const j = await r.json()
+      setResults(j.items ?? [])
+    }, 150)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [query, sub.food_id])
+
+  function pickFood(food: Food) {
+    const measures = measuresOf(food)
+    const dm = measures.find((m) => m.label === 'Porção') ?? measures[0]
+    const qty = 1
+    const grams = dm.grams * qty
+    const scaled = scaleFromGrams(food, grams)
+    onChange({
+      food_id: food.id,
+      food_description: food.description,
+      food_source: food.source,
+      food_measures: food.household_measures ?? [],
+      custom_description: null,
+      quantity_g: grams,
+      measure_label: dm.label,
+      measure_grams: dm.grams,
+      measure_qty: qty,
+      household_measure: `${qty} ${dm.label}`,
+      ...scaled,
+    })
+    setQuery(food.description)
+    setShowDrop(false)
+  }
+
+  function scaleFromG(newGrams: number) {
+    if (sub.quantity_g > 0 && sub.energy_kcal != null) {
+      const ratio = newGrams / sub.quantity_g
+      return {
+        quantity_g: +newGrams.toFixed(2),
+        energy_kcal: +((sub.energy_kcal ?? 0) * ratio).toFixed(1),
+        protein_g: sub.protein_g != null ? +(sub.protein_g * ratio).toFixed(2) : null,
+        lipid_g: sub.lipid_g != null ? +(sub.lipid_g * ratio).toFixed(2) : null,
+        carb_g: sub.carb_g != null ? +(sub.carb_g * ratio).toFixed(2) : null,
+        fiber_g: sub.fiber_g != null ? +(sub.fiber_g * ratio).toFixed(2) : null,
+      }
+    }
+    return { quantity_g: +newGrams.toFixed(2) }
+  }
+
+  function onQtyChange(qty: number) {
+    const grams = (sub.measure_grams ?? 1) * qty
+    onChange({
+      measure_qty: qty,
+      household_measure: sub.measure_label ? `${qty} ${sub.measure_label}` : null,
+      ...scaleFromG(grams),
+    })
+  }
+
+  function onMeasureChange(label: string) {
+    const measures = [...DEFAULT_MEASURES, ...(sub.food_measures ?? [])]
+    const m = measures.find((x) => x.label === label)
+    if (!m) return
+    const qty = sub.measure_qty || 1
+    const grams = m.grams * qty
+    onChange({
+      measure_label: m.label,
+      measure_grams: m.grams,
+      measure_qty: qty,
+      household_measure: `${qty} ${m.label}`,
+      ...scaleFromG(grams),
+    })
+  }
+
+  function clearFood() {
+    onChange({
+      food_id: null, food_description: null, food_source: null, food_measures: [],
+      measure_label: null, measure_grams: null, measure_qty: 0,
+      energy_kcal: 0, protein_g: 0, lipid_g: 0, carb_g: 0, fiber_g: 0,
+    })
+    setQuery('')
+  }
+
+  const measures = measuresOf(sub.food_id ? { household_measures: sub.food_measures ?? null } as Food : null)
+
+  return (
+    <div className="bg-muted/30 rounded p-2 space-y-1">
+      <div className="flex gap-2 items-start flex-wrap">
+        <span className="text-xs text-muted-foreground mt-2">ou</span>
+        <div className="flex-1 min-w-[180px] relative">
+          <Input
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setShowDrop(true)
+              if (sub.food_id) clearFood()
+              else onChange({ custom_description: e.target.value || null })
+            }}
+            onFocus={() => setShowDrop(true)}
+            onBlur={() => setTimeout(() => setShowDrop(false), 200)}
+            placeholder="Buscar alimento substituto"
+          />
+          {showDrop && results.length > 0 && (
+            <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto border rounded-md bg-background shadow-xl">
+              {results.map((f) => (
+                <button key={f.id} type="button"
+                  className="block w-full text-left px-3 py-2 text-sm hover:bg-accent"
+                  onClick={() => pickFood(f)}>
+                  <div className="font-medium">{f.description}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {f.source} · {f.energy_kcal ?? '-'} kcal/100g
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <Input className="w-14" type="number" step="0.5" min="0"
+          value={sub.measure_qty || ''}
+          onChange={(e) => onQtyChange(Number(e.target.value))}
+          disabled={!sub.food_id} />
+        <select
+          className="h-10 rounded-md border bg-background px-2 text-sm w-32 disabled:opacity-50"
+          value={sub.measure_label ?? ''}
+          onChange={(e) => onMeasureChange(e.target.value)}
+          disabled={!sub.food_id}
+        >
+          {!sub.measure_label && <option value="">—</option>}
+          {measures.map((m) => (
+            <option key={m.label} value={m.label}>{m.label} ({m.grams}g)</option>
+          ))}
+        </select>
+        <span className="text-xs text-muted-foreground self-center min-w-[70px]">
+          {(sub.quantity_g ?? 0).toFixed(0)}g · {(sub.energy_kcal ?? 0).toFixed(0)}kcal
+        </span>
+        <Button variant="outline" size="sm" onClick={onRemove}>×</Button>
       </div>
     </div>
   )
