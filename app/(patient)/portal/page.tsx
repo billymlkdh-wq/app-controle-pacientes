@@ -85,9 +85,11 @@ export default async function PortalHome() {
         </CardContent>
       </Card>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-2 gap-4">
         <Card><CardHeader><CardTitle>Plano alimentar</CardTitle></CardHeader>
           <CardContent><Link href="/plano" className="text-sm text-primary hover:underline">Ver meu cardápio</Link></CardContent></Card>
+        <Card><CardHeader><CardTitle>Treino</CardTitle></CardHeader>
+          <CardContent><Link href="/treino" className="text-sm text-primary hover:underline">Ver meu treino</Link></CardContent></Card>
         <Card><CardHeader><CardTitle>Evolução</CardTitle></CardHeader>
           <CardContent><Link href="/progress" className="text-sm text-primary hover:underline">Ver meu gráfico</Link></CardContent></Card>
         <Card><CardHeader><CardTitle>Notificações</CardTitle></CardHeader>
