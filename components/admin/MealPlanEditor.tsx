@@ -395,12 +395,13 @@ function ItemRow({
 
   React.useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (query.trim().length < 2 || item.food_id) { setResults([]); return }
+    const trimmed = query.trim()
+    if (trimmed.length < 1 || item.food_id) { setResults([]); return }
     debounceRef.current = setTimeout(async () => {
-      const r = await fetch(`/api/food-catalog/search?q=${encodeURIComponent(query)}&only_with_nutrition=1&limit=10`)
+      const r = await fetch(`/api/food-catalog/search?q=${encodeURIComponent(trimmed)}&only_with_nutrition=1&limit=15`)
       const j = await r.json()
       setResults(j.items ?? [])
-    }, 250)
+    }, 150)
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [query, item.food_id])
 

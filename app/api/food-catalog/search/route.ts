@@ -1,4 +1,5 @@
-// Busca no food_catalog (TACO + TBCA). Admin only — paciente não precisa buscar.
+// Busca no food_catalog com unaccent + similarity.
+// Chama RPC search_food (Postgres) pra achar mesmo com acento/digitação parcial.
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
@@ -13,32 +14,30 @@ export async function GET(request: NextRequest) {
   const onlyWithNutrition = request.nextUrl.searchParams.get('only_with_nutrition') === '1'
   const limit = Math.min(Number(request.nextUrl.searchParams.get('limit') ?? 20), 50)
 
-  if (q.length < 2) return NextResponse.json({ items: [] })
+  if (q.length < 1) return NextResponse.json({ items: [] })
 
-  let query = supabase
-    .from('food_catalog')
-    .select('id, source, description, category, energy_kcal, protein_g, lipid_g, carb_g, fiber_g, sodium_mg, household_measures, needs_nutrition_scrape')
-    .ilike('description', `%${q}%`)
-    .eq('active', true)
-    .limit(limit)
-
-  if (onlyWithNutrition) {
-    query = query.eq('needs_nutrition_scrape', false)
-  }
-
-  const { data, error } = await query
+  const { data, error } = await supabase.rpc('search_food', {
+    q,
+    only_with_nutrition: onlyWithNutrition,
+    lim: limit,
+  })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Ordena por fonte (TACO > Tucunduva > TBCA > CUSTOM), match exato, alfabético
-  const SOURCE_RANK: Record<string, number> = { TACO: 1, TUCUNDUVA: 2, TBCA: 3, CUSTOM: 4 }
-  const items = (data ?? []).sort((a, b) => {
-    const sr = (SOURCE_RANK[a.source] ?? 99) - (SOURCE_RANK[b.source] ?? 99)
-    if (sr !== 0) return sr
-    const qLow = q.toLowerCase()
-    const aStart = a.description.toLowerCase().startsWith(qLow)
-    const bStart = b.description.toLowerCase().startsWith(qLow)
-    if (aStart !== bStart) return aStart ? -1 : 1
-    return a.description.localeCompare(b.description)
-  })
+  // RPC retorna linhas completas de food_catalog
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const items = (data ?? []).map((r: any) => ({
+    id: r.id,
+    source: r.source,
+    description: r.description,
+    category: r.category,
+    energy_kcal: r.energy_kcal,
+    protein_g: r.protein_g,
+    lipid_g: r.lipid_g,
+    carb_g: r.carb_g,
+    fiber_g: r.fiber_g,
+    sodium_mg: r.sodium_mg,
+    household_measures: r.household_measures ?? [],
+    needs_nutrition_scrape: r.needs_nutrition_scrape,
+  }))
   return NextResponse.json({ items })
 }
