@@ -3,8 +3,10 @@
 export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { PrintButton } from '@/components/patient/PrintButton'
+import { MealCompletionButton } from '@/components/patient/MealCompletionButton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { todayBR } from '@/lib/utils'
 
 export default async function PatientPlanoPage() {
   const supabase = await createClient()
@@ -40,6 +42,28 @@ export default async function PatientPlanoPage() {
     .select('id, name, time_hhmm, order_num, notes, items:meal_plan_items(id, food_id, custom_description, quantity_g, household_measure, energy_kcal, protein_g, lipid_g, carb_g, fiber_g, order_num, food:food_catalog(description), substitutes:meal_plan_item_substitutes(id, food_id, custom_description, quantity_g, household_measure, order_num, food:food_catalog(description)))')
     .eq('plan_id', plan.id)
     .order('order_num')
+
+  // Completions do dia (pra marcar botão + mostrar foto)
+  const today = todayBR()
+  const { data: compRows } = await supabase
+    .from('meal_completions')
+    .select('meal_id, photo_url')
+    .eq('patient_id', patient.id)
+    .gte('completed_at', `${today}T00:00:00`)
+    .lte('completed_at', `${today}T23:59:59`)
+  const completionsByMeal = new Map<string, string | null>()
+  for (const c of compRows ?? []) completionsByMeal.set(c.meal_id, c.photo_url ?? null)
+
+  // Resolve URLs assinadas das fotos (bucket privado)
+  const photoPaths = [...completionsByMeal.values()].filter((p): p is string => !!p)
+  const signedPhotoUrls = new Map<string, string>()
+  if (photoPaths.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from('meal-photos').createSignedUrls(photoPaths, 86400)
+    for (const s of signed ?? []) {
+      if (s.path && s.signedUrl) signedPhotoUrls.set(s.path, s.signedUrl)
+    }
+  }
 
   // Totais
   const totals = { kcal: 0, prot: 0, lip: 0, carb: 0, fib: 0 }
@@ -89,13 +113,17 @@ export default async function PatientPlanoPage() {
           {(meals ?? []).map((m: any) => {
             const mealKcal = (m.items ?? []).reduce((s: number, i: any) => s + Number(i.energy_kcal ?? 0), 0)
             const sortedItems = [...(m.items ?? [])].sort((a: any, b: any) => a.order_num - b.order_num)
+            const isDone = completionsByMeal.has(m.id)
+            const photoPath = completionsByMeal.get(m.id) ?? null
+            const signedPhotoUrl = photoPath ? signedPhotoUrls.get(photoPath) ?? null : null
             return (
-              <Card key={m.id}>
+              <Card key={m.id} className={isDone ? 'border-green-700/50 bg-green-950/10' : ''}>
                 <CardHeader>
                   <CardTitle className="text-sm flex items-center justify-between">
                     <span>
                       {m.time_hhmm ? <span className="text-[#9a8c70] mr-2">{m.time_hhmm}</span> : null}
                       {m.name}
+                      {isDone && <span className="ml-2 text-green-400">✓</span>}
                     </span>
                     <Badge variant="outline">{mealKcal.toFixed(0)} kcal</Badge>
                   </CardTitle>
@@ -138,6 +166,12 @@ export default async function PatientPlanoPage() {
                   {m.notes && (
                     <p className="text-xs italic text-[#9a8c70] mt-2">{m.notes}</p>
                   )}
+                  <MealCompletionButton
+                    mealId={m.id}
+                    patientId={patient.id}
+                    initialCompleted={isDone}
+                    initialPhotoUrl={signedPhotoUrl}
+                  />
                 </CardContent>
               </Card>
             )

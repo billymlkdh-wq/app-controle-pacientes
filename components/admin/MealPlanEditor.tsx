@@ -148,6 +148,24 @@ export function MealPlanEditor({
   const [plan, setPlan] = React.useState<Plan>(initialPlan)
   const [meals, setMeals] = React.useState<Meal[]>(initialMeals)
   const [saving, setSaving] = React.useState(false)
+  const [notifying, setNotifying] = React.useState(false)
+
+  async function notifyPatient() {
+    if (!confirm('Enviar WhatsApp + e-mail avisando que o plano está pronto?')) return
+    setNotifying(true)
+    try {
+      const r = await fetch(`/api/meal-plans/${plan.id}/notify`, { method: 'POST' })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j.error ?? 'Erro')
+      const wOk = j.whatsapp?.ok
+      const eOk = j.email?.ok
+      toast.success(`Paciente notificado. WhatsApp: ${wOk ? '✅' : '—'} · E-mail: ${eOk ? '✅' : '—'}`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro')
+    } finally {
+      setNotifying(false)
+    }
+  }
 
   // Totais calculados
   const totals = React.useMemo(() => {
@@ -335,8 +353,14 @@ export function MealPlanEditor({
       )}
 
       {/* Save bar ───────────────────────────────── */}
-      <div className="sticky bottom-0 bg-background border-t py-3 -mx-6 px-6 flex justify-end gap-2">
+      <div className="sticky bottom-0 bg-background border-t py-3 -mx-6 px-6 flex justify-end gap-2 flex-wrap">
         <Button variant="outline" onClick={() => router.back()}>Voltar</Button>
+        <Button variant="outline" onClick={() => window.open(`/patients/${plan.patient_id}/meal-plan/${plan.id}/pdf`, '_blank')}>
+          📄 PDF
+        </Button>
+        <Button variant="outline" onClick={notifyPatient} disabled={notifying}>
+          {notifying ? 'Avisando…' : '🔔 Avisar paciente'}
+        </Button>
         <Button onClick={save} disabled={saving}>
           {saving ? 'Salvando…' : 'Salvar plano'}
         </Button>

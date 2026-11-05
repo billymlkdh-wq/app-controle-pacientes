@@ -67,6 +67,46 @@ export async function sendPasswordResetEmail({
   }
 }
 
+export async function sendMealPlanReadyEmail({
+  to,
+  name,
+  portalLink,
+  planName,
+}: {
+  to: string
+  name: string
+  portalLink: string
+  planName: string
+}): Promise<SendEmailResult> {
+  const transport = getTransport()
+  if (!transport) return { ok: false, error: 'GMAIL_USER / GMAIL_APP_PASSWORD not set' }
+  const firstName = name.split(/\s+/)[0] || name
+  try {
+    const info = await transport.sendMail({
+      from: fromAddress(),
+      to,
+      subject: `🍽️ Seu plano alimentar está pronto: ${planName}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; color: #1a1a1a;">
+          <h2 style="color: #16a34a;">Oi, ${firstName}! 👋</h2>
+          <p>Teu novo plano alimentar <strong>${planName}</strong> já está disponível no app.</p>
+          <p>Abre quando puder, dá uma lida nas refeições e começa a aplicar.</p>
+          <div style="margin: 28px 0; text-align: center;">
+            <a href="${portalLink}"
+               style="background: #16a34a; color: #fff; padding: 12px 28px; border-radius: 8px;
+                      text-decoration: none; font-weight: 600; font-size: 16px;">
+              Ver meu plano
+            </a>
+          </div>
+          <p style="color: #666; font-size: 13px;">Qualquer dúvida, me chama direto no WhatsApp.</p>
+        </div>`,
+    })
+    return { ok: true, id: info.messageId }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}
+
 export async function sendQuestionnaireUnlockedEmail({
   to,
   name,
