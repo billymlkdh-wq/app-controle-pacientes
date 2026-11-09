@@ -18,12 +18,76 @@ export type PhotoGroup = {
   photos: PhotoItem[]
 }
 
+// Cache conversão HEIC → JPEG entre renders (mesmo path não converte 2x)
+const HEIC_CACHE = new Map<string, string>()
+
+function isHeic(path: string): boolean {
+  const p = path.toLowerCase()
+  return p.endsWith('.heic') || p.endsWith('.heif')
+}
+
 function Media({
   item, alt, className = '',
 }: { item: PhotoItem; alt: string; className?: string }) {
+  const [convertedUrl, setConvertedUrl] = React.useState<string | null>(
+    HEIC_CACHE.get(item.path) ?? null,
+  )
+  const [converting, setConverting] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (item.isVideo || !isHeic(item.path)) return
+    if (HEIC_CACHE.has(item.path)) {
+      setConvertedUrl(HEIC_CACHE.get(item.path)!)
+      return
+    }
+    let cancelled = false
+    setConverting(true)
+    ;(async () => {
+      try {
+        const heic2any = (await import('heic2any')).default
+        const resp = await fetch(item.url)
+        const blob = await resp.blob()
+        const out = await heic2any({ blob, toType: 'image/jpeg', quality: 0.85 })
+        const outBlob = Array.isArray(out) ? out[0] : out
+        const url = URL.createObjectURL(outBlob)
+        HEIC_CACHE.set(item.path, url)
+        if (!cancelled) setConvertedUrl(url)
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Erro')
+      } finally {
+        if (!cancelled) setConverting(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [item.path, item.url, item.isVideo])
+
   if (item.isVideo) {
     return <video src={item.url} controls preload="metadata" className={className} />
   }
+
+  if (isHeic(item.path)) {
+    if (converting) {
+      return (
+        <div className={`${className} flex items-center justify-center bg-muted/40 text-xs text-muted-foreground`}>
+          Convertendo HEIC…
+        </div>
+      )
+    }
+    if (error) {
+      return (
+        <div className={`${className} flex items-center justify-center bg-red-950/30 text-xs text-red-400 p-2 text-center`}>
+          Falha ao converter HEIC
+        </div>
+      )
+    }
+    if (convertedUrl) {
+      // eslint-disable-next-line @next/next/no-img-element
+      return <img src={convertedUrl} alt={alt} loading="lazy" className={className} />
+    }
+    return <div className={`${className} bg-muted/40`} />
+  }
+
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={item.url} alt={alt} loading="lazy" className={className} />
 }
