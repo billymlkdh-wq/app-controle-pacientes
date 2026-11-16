@@ -2,6 +2,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { PageHeader } from '@/components/admin/PageHeader'
 import { formatDateBR } from '@/lib/utils'
 
 export default async function AdminNotificationsPage() {
@@ -9,10 +10,13 @@ export default async function AdminNotificationsPage() {
   const { data: list } = await supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(100)
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Notificações</h1>
+      <PageHeader
+        title="Notificações"
+        subtitle={`${(list ?? []).filter((n) => !n.read).length} não lida(s)`}
+      />
       <div className="space-y-2">
         {(list ?? []).map((n) => (
-          <Card key={n.id} className={n.read ? 'opacity-60' : ''}>
+          <Card key={n.id} className={`admin-card ${n.read ? 'opacity-60' : ''}`}>
             <CardHeader><CardTitle className="text-base flex items-center justify-between">
               <span>{n.title}</span>
               <div className="flex gap-2">

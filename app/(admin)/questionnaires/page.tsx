@@ -2,6 +2,7 @@
 // Cada paciente vira 1 card com contador de submissões e data do último ciclo.
 // Admin clica → vai pra /questionnaires/[patientId] ver submissões individualmente.
 import Link from 'next/link'
+import { PageHeader } from '@/components/admin/PageHeader'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -65,12 +66,15 @@ export default async function QuestionnairesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Respostas</h1>
-        <Link href="/questionnaires/questions" className="text-sm text-primary hover:underline">
-          Gerenciar perguntas
-        </Link>
-      </div>
+      <PageHeader
+        title="Respostas"
+        subtitle="Visão agregada por paciente"
+        action={
+          <Link href="/questionnaires/questions" className="text-sm text-primary hover:underline">
+            Gerenciar perguntas →
+          </Link>
+        }
+      />
 
       <Card>
         <CardHeader><CardTitle className="text-base">Lembretes manuais</CardTitle></CardHeader>

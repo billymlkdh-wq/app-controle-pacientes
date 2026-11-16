@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic'
 import { createAdminClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { PageHeader } from '@/components/admin/PageHeader'
+import { Flame } from 'lucide-react'
 import { getLevel } from '@/lib/gamification'
 
 export default async function AdminRankingPage() {
@@ -37,10 +39,10 @@ export default async function AdminRankingPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Ranking</h1>
+      <PageHeader title="Ranking" subtitle="Classificação geral e histórico de pontos" />
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
+      <div className="grid md:grid-cols-2 gap-3">
+        <Card className="admin-card">
           <CardHeader><CardTitle className="text-base">Classificação geral</CardTitle></CardHeader>
           <CardContent className="space-y-2">
             {ranking.map((r: any, i: number) => {
@@ -52,7 +54,11 @@ export default async function AdminRankingPage() {
                   </div>
                   <div className="flex-1 text-sm font-medium">{r.name}</div>
                   <Badge variant="outline" className="text-xs">{level.name}</Badge>
-                  {r.streak > 0 && <span className="text-xs">🔥{r.streak}</span>}
+                  {r.streak > 0 && (
+                    <span className="inline-flex items-center gap-0.5 text-xs text-orange-500 font-medium">
+                      <Flame className="h-3 w-3" />{r.streak}
+                    </span>
+                  )}
                   <div className="text-sm font-semibold">{r.points} pts</div>
                 </div>
               )
@@ -63,7 +69,7 @@ export default async function AdminRankingPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="admin-card">
           <CardHeader><CardTitle className="text-base">Histórico recente de pontos</CardTitle></CardHeader>
           <CardContent className="space-y-2">
             {recentPoints.map((p: any) => (

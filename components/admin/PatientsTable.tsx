@@ -225,10 +225,11 @@ export function PatientsTable({ patients, pendingCount }: Props) {
       )}
 
       {/* Table */}
-      <div className="rounded-lg border overflow-x-auto">
+      <div className="admin-card overflow-hidden">
+        <div className="overflow-x-auto max-h-[calc(100vh-240px)]">
         <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/40 text-muted-foreground">
+          <thead className="admin-thead">
+            <tr className="border-b text-muted-foreground">
               <SortHeader label="Nome" sortkey="name" className="text-left px-4 py-2.5 font-medium" />
               <th className="text-left px-4 py-2.5 font-medium hidden sm:table-cell">Contato</th>
               <SortHeader label="Plano" sortkey="plan" className="text-left px-4 py-2.5 font-medium hidden md:table-cell" />
@@ -250,12 +251,19 @@ export function PatientsTable({ patients, pendingCount }: Props) {
               return (
                 <tr
                   key={p.id}
-                  className={`border-b last:border-0 hover:bg-muted/20 transition-colors ${
+                  className={`admin-row border-b last:border-0 hover:bg-muted/30 ${
                     active ? '' : 'opacity-60'
                   }`}
                 >
                   {/* Nome */}
-                  <td className="px-4 py-3 font-medium">{p.name}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 text-primary grid place-items-center text-xs font-semibold flex-shrink-0">
+                        {p.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="font-medium truncate">{p.name}</span>
+                    </div>
+                  </td>
 
                   {/* Contato */}
                   <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">
@@ -291,9 +299,9 @@ export function PatientsTable({ patients, pendingCount }: Props) {
                     {!active ? (
                       <span className="text-muted-foreground text-xs">—</span>
                     ) : p.questionnaire_status === 'responded' ? (
-                      <Badge variant="success" className="text-[10px]">✓ Respondeu</Badge>
+                      <Badge variant="success" className="text-[10px] font-medium">Respondeu</Badge>
                     ) : p.questionnaire_status === 'pending' ? (
-                      <Badge variant="warning" className="text-[10px]">⏳ Pendente</Badge>
+                      <Badge variant="warning" className="text-[10px] font-medium">Pendente</Badge>
                     ) : (
                       <span className="text-muted-foreground text-xs">—</span>
                     )}
@@ -350,6 +358,7 @@ export function PatientsTable({ patients, pendingCount }: Props) {
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       <p className="text-xs text-muted-foreground">

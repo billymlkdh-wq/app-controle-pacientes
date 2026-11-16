@@ -81,8 +81,12 @@ export function HabitTracker({ todayLogs, goals }: Props) {
       setPreviews((p) => ({ ...p, [type]: '' }))
 
       const newTotal = getLogged(type) + value
-      if (data.xp > 0) toast.success(`+${data.xp} XP${newTotal >= goalVal ? ' 🎯 Meta atingida!' : ''}`)
-      else toast.success('Registrado!')
+      if (data.xp > 0) {
+        const { toastXP } = await import('./XPToast')
+        const { notifyXPGained } = await import('./XPHeader')
+        toastXP(data.xp, newTotal >= goalVal ? 'Meta atingida!' : 'Registrado!')
+        notifyXPGained()
+      } else toast.success('Registrado!')
     } catch (e: any) {
       toast.error(e.message ?? 'Erro ao registrar')
     } finally {

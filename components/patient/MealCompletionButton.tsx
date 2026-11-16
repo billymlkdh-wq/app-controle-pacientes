@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Camera, Check, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { toastXP } from './XPToast'
+import { notifyXPGained } from './XPHeader'
 
 export function MealCompletionButton({
   mealId,
@@ -36,7 +38,8 @@ export function MealCompletionButton({
       if (!r.ok) throw new Error(j.error ?? 'Erro')
       setCompleted(true)
       if (j.xp_awarded > 0) {
-        toast.success(`Refeição marcada! +${j.xp_awarded} XP 🔥`)
+        toastXP(j.xp_awarded, 'Refeição marcada!')
+        notifyXPGained()
       } else {
         toast.success('Foto atualizada.')
       }

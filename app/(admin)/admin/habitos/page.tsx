@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createAdminClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AdminHabitGoalsManager } from '@/components/admin/AdminHabitGoalsManager'
+import { PageHeader } from '@/components/admin/PageHeader'
 
 export default async function AdminHabitosPage() {
   const admin = createAdminClient() as any
@@ -18,11 +19,11 @@ export default async function AdminHabitosPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <h1 className="text-2xl font-semibold">Hábitos dos Pacientes</h1>
+      <PageHeader title="Hábitos dos pacientes" subtitle="Metas de água, passos, cardio e treino" />
 
       <AdminHabitGoalsManager patients={patients ?? []} goals={goals ?? []} />
 
-      <Card>
+      <Card className="admin-card">
         <CardHeader><CardTitle className="text-base">Registros recentes (7 dias)</CardTitle></CardHeader>
         <CardContent>
           {(!recentLogs || recentLogs.length === 0) && (

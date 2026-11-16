@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { PageHeader } from '@/components/admin/PageHeader'
 
 type Question = {
   id: string
@@ -120,10 +121,11 @@ export default function QuestionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Perguntas do questionário</h1>
-        {!editing && <Button onClick={startNew}>+ Nova pergunta</Button>}
-      </div>
+      <PageHeader
+        title="Perguntas do questionário"
+        subtitle={`${questions.length} pergunta(s) ativa(s)`}
+        action={!editing ? <Button onClick={startNew}>+ Nova pergunta</Button> : undefined}
+      />
 
       {editing && (
         <Card>

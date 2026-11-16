@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Atkinson Hyperlegible — fonte WCAG-friendly, excelente pra app clínico.
+   Mantém Inter de fallback onde o Next já injeta. */
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap');
+
 @layer base {
   :root {
     /* Paleta: preto, amarelo, bege, offwhite */
@@ -46,3 +50,200 @@
   * { @apply border-border; }
   body { @apply bg-background text-foreground; }
 }
+
+/* ── Admin polish ──────────────────────────────────────────────────────
+   Soft UI Evolution: sombras multi-camada suaves + motion 200ms +
+   tipografia Atkinson Hyperlegible só no admin (clínico/acessível).
+   ────────────────────────────────────────────────────────────────────── */
+[data-admin='true'] {
+  font-family: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+[data-admin='true'] .admin-card {
+  @apply bg-card border border-border rounded-xl transition-all duration-200;
+  box-shadow:
+    0 1px 2px 0 rgb(0 0 0 / 0.04),
+    0 2px 4px -1px rgb(0 0 0 / 0.03);
+}
+[data-admin='true'] .admin-card:hover {
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.07),
+    0 2px 4px -2px rgb(0 0 0 / 0.05);
+}
+.dark [data-admin='true'] .admin-card {
+  box-shadow:
+    0 1px 2px 0 rgb(0 0 0 / 0.5),
+    0 1px 3px 0 rgb(0 0 0 / 0.3);
+}
+
+/* Linha de tabela admin com transição suave em hover */
+[data-admin='true'] .admin-row {
+  @apply transition-colors duration-150;
+}
+
+/* Cabeçalho de tabela sticky + translúcido */
+[data-admin='true'] .admin-thead {
+  @apply sticky top-0 z-10 bg-muted/60 backdrop-blur-sm;
+}
+
+/* Stagger entrada de cards — 200ms, respeita reduced-motion */
+@keyframes admin-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+[data-admin='true'] .admin-fade {
+  animation: admin-fade-in 240ms cubic-bezier(0.34, 1.26, 0.64, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-admin='true'] .admin-fade { animation: none; }
+}
+
+/* Stat card accent — barra lateral colorida fina em KPIs */
+[data-admin='true'] .admin-stat {
+  @apply relative overflow-hidden;
+}
+[data-admin='true'] .admin-stat::before {
+  content: '';
+  @apply absolute left-0 top-0 bottom-0 w-1 rounded-l-xl;
+  background: var(--stat-accent, hsl(var(--primary)));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PATIENT APP — Dark Gamified
+   Barlow Condensed display + Barlow body + shimmer na barra XP +
+   stagger de entrada. Escopo via [data-patient='true'].
+   ═══════════════════════════════════════════════════════════════════════ */
+[data-patient='true'] {
+  font-family: var(--font-barlow), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --p-bg: #0f0d0a;
+  --p-bg-elev: #1a1610;
+  --p-bg-elev-2: #22201a;
+  --p-border: #2a2419;
+  --p-border-strong: #3a3321;
+  --p-fg: #f5efe0;
+  --p-fg-muted: #9a8c70;
+  --p-fg-dim: #6b6250;
+  --p-brand: #fbbf24;
+  --p-brand-strong: #fde047;
+  --p-brand-deep: #78350f;
+  --p-success: #22c55e;
+  --p-success-bg: rgba(34, 197, 94, 0.12);
+  --p-danger: #ef4444;
+  --p-orange: #fb923c;
+}
+
+/* Display font — títulos, números grandes, letras ABCDE do split */
+.p-display {
+  font-family: var(--font-barlow-condensed), var(--font-barlow), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.p-display-xl {
+  font-family: var(--font-barlow-condensed), var(--font-barlow), system-ui, sans-serif;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+/* Stagger fade-in nos filhos */
+@keyframes patient-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.p-fade {
+  animation: patient-fade-in 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .p-fade { animation: none; }
+}
+
+/* Shimmer passando dentro da barra XP */
+@keyframes p-shimmer {
+  0%, 100% { transform: translateX(-100%); }
+  50%      { transform: translateX(100%); }
+}
+.p-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.p-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+  animation: p-shimmer 2.4s infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .p-shimmer::after { animation: none; display: none; }
+}
+
+/* Streak badge outline — fogo laranja num pill com borda */
+.p-streak-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(251, 146, 60, 0.12);
+  border: 1px solid rgba(251, 146, 60, 0.3);
+  color: var(--p-orange);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hero card com glow amarelo no canto */
+.p-hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1f1a10 0%, #2a2112 100%);
+  border: 1px solid var(--p-border-strong);
+}
+.p-hero::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 180px; height: 180px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.18), transparent 70%);
+  pointer-events: none;
+}
+
+/* Stat card no padrão bento */
+.p-stat {
+  background: var(--p-bg-elev);
+  border: 1px solid var(--p-border);
+  border-radius: 14px;
+  padding: 14px;
+  transition: transform 200ms, border-color 200ms;
+}
+.p-stat:hover {
+  transform: translateY(-2px);
+  border-color: var(--p-border-strong);
+}
+
+/* CTA amarelão com shadow brand no hover */
+.p-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--p-brand);
+  color: var(--p-brand-deep);
+  font-family: var(--font-barlow-condensed), var(--font-barlow), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 200ms, box-shadow 200ms, background 200ms;
+}
+.p-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(251, 191, 36, 0.35);
+  background: var(--p-brand-strong);
+}
+.p-cta:active { transform: translateY(0); }
+

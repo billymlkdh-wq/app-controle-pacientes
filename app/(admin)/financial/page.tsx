@@ -2,6 +2,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { StatCard } from '@/components/admin/StatCard'
+import { PageHeader, Section } from '@/components/admin/PageHeader'
+import {
+  DollarSign, ShoppingCart, Users as UsersIcon, FileText,
+  Wallet, Clock, AlertTriangle,
+} from 'lucide-react'
 import { formatBRL, formatDateBR } from '@/lib/utils'
 import {
   VendasPlanoChart,
@@ -98,38 +104,53 @@ export default async function FinancialPage() {
   const totalAtr  = (payments ?? []).filter((p) => p.status === 'atrasado').reduce((s, p) => s + Number(p.amount), 0)
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">Financeiro</h1>
+    <div className="space-y-6">
+      <PageHeader title="Financeiro" subtitle={`Resumo do mês de ${monthLabel}`} />
 
       {/* ── KPIs mês atual ────────────────────────────────────────────────── */}
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-        <Card className="lg:col-span-2">
-          <CardHeader><CardTitle className="text-sm text-muted-foreground">Receita {monthLabel}</CardTitle></CardHeader>
-          <CardContent className="text-2xl font-semibold text-emerald-600">{formatBRL(totalVendasReais)}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-sm text-muted-foreground">Vendas no mês</CardTitle></CardHeader>
-          <CardContent className="text-2xl font-semibold">{totalVendasQtd}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-sm text-muted-foreground">Ativos (total)</CardTitle></CardHeader>
-          <CardContent className="text-2xl font-semibold text-blue-600">{totaisStatus.ativos}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-sm text-muted-foreground">Contratos (total)</CardTitle></CardHeader>
-          <CardContent className="text-2xl font-semibold">{totaisStatus.total}</CardContent>
-        </Card>
-      </div>
+      <Section label="Mês atual">
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+          <StatCard
+            label={`Receita ${monthLabel}`}
+            value={formatBRL(totalVendasReais)}
+            icon={<DollarSign className="h-4 w-4" />}
+            tone="success"
+            delay={0}
+          />
+          <StatCard
+            label="Vendas no mês"
+            value={totalVendasQtd}
+            icon={<ShoppingCart className="h-4 w-4" />}
+            tone="primary"
+            delay={40}
+          />
+          <StatCard
+            label="Ativos (total)"
+            value={totaisStatus.ativos}
+            icon={<UsersIcon className="h-4 w-4" />}
+            tone="info"
+            delay={80}
+          />
+          <StatCard
+            label="Contratos (total)"
+            value={totaisStatus.total}
+            icon={<FileText className="h-4 w-4" />}
+            tone="muted"
+            delay={120}
+          />
+        </div>
+      </Section>
 
-      {/* ── KPIs pagamentos ────────────────────────────────────────────────── */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Recebido (app)</CardTitle></CardHeader><CardContent className="text-2xl font-semibold text-emerald-600">{formatBRL(totalPago)}</CardContent></Card>
-        <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Pendente</CardTitle></CardHeader><CardContent className="text-2xl font-semibold text-amber-500">{formatBRL(totalPend)}</CardContent></Card>
-        <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Atrasado</CardTitle></CardHeader><CardContent className="text-2xl font-semibold text-destructive">{formatBRL(totalAtr)}</CardContent></Card>
-      </div>
+      <Section label="Pagamentos">
+        <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
+          <StatCard label="Recebido" value={formatBRL(totalPago)} icon={<Wallet className="h-4 w-4" />} tone="success" />
+          <StatCard label="Pendente" value={formatBRL(totalPend)} icon={<Clock className="h-4 w-4" />} tone="warning" />
+          <StatCard label="Atrasado" value={formatBRL(totalAtr)} icon={<AlertTriangle className="h-4 w-4" />} tone="danger" />
+        </div>
+      </Section>
 
       {/* ── Planos por Status (portfolio total) ───────────────────────────── */}
-      <Card>
+      <Card className="admin-card">
         <CardHeader><CardTitle>Planos por Status — Portfolio Total</CardTitle></CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -178,8 +199,8 @@ export default async function FinancialPage() {
       </Card>
 
       {/* ── Vendas do mês ──────────────────────────────────────────────────── */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+      <div className="grid gap-3 lg:grid-cols-2">
+        <Card className="admin-card">
           <CardHeader><CardTitle>Vendas por Plano — Receita <span className="text-muted-foreground font-normal text-sm capitalize">{monthLabel}</span></CardTitle></CardHeader>
           <CardContent>
             <VendasPlanoChart data={vendasPlanoReais} />
@@ -208,7 +229,7 @@ export default async function FinancialPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="admin-card">
           <CardHeader><CardTitle>Vendas por Plano — Quantidade <span className="text-muted-foreground font-normal text-sm capitalize">{monthLabel}</span></CardTitle></CardHeader>
           <CardContent>
             <VendasPlanoQtdChart data={vendasPlanoQtd} />
@@ -242,7 +263,7 @@ export default async function FinancialPage() {
       </div>
 
       {/* ── Últimos pagamentos ─────────────────────────────────────────────── */}
-      <Card>
+      <Card className="admin-card">
         <CardHeader><CardTitle>Últimos pagamentos</CardTitle></CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

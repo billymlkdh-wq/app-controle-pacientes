@@ -5,6 +5,9 @@
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
+import {
+  axisProps, gridProps, ChartTooltip, ChartLegend,
+} from './chart-helpers'
 
 type ResponseRow = {
   response_number: number | null
@@ -67,8 +70,6 @@ function buildData(
   })
 }
 
-const tooltipStyle = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }
-
 function Chart({
   data,
   config,
@@ -82,12 +83,12 @@ function Chart({
   return (
     <div style={{ height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-          <XAxis dataKey="date" className="text-xs" tick={{ fontSize: 11 }} />
-          <YAxis className="text-xs" tick={{ fontSize: 11 }} width={36} />
-          <Tooltip contentStyle={tooltipStyle} />
-          <Legend wrapperStyle={{ fontSize: 11 }} />
+        <LineChart data={data} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
+          <CartesianGrid {...gridProps} />
+          <XAxis dataKey="date" {...axisProps} />
+          <YAxis {...axisProps} width={32} />
+          <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'hsl(var(--primary))', strokeOpacity: 0.3, strokeWidth: 1 }} />
+          <Legend content={<ChartLegend />} />
           {Object.values(config).map((s) => (
             <Line
               key={s.name}
@@ -95,7 +96,8 @@ function Chart({
               dataKey={s.name}
               stroke={s.color}
               strokeWidth={2}
-              dot={{ r: 3 }}
+              dot={{ r: 2.5, strokeWidth: 0, fill: s.color }}
+              activeDot={{ r: 5, strokeWidth: 2, stroke: 'hsl(var(--background))' }}
               connectNulls
             />
           ))}

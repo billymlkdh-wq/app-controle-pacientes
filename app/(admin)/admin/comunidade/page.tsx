@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic'
 import { createAdminClient } from '@/lib/supabase/server'
 import { AdminCommunityModerator } from '@/components/admin/AdminCommunityModerator'
+import { PageHeader } from '@/components/admin/PageHeader'
 
 export default async function AdminComunidadePage() {
   const admin = createAdminClient() as any
@@ -28,7 +29,7 @@ export default async function AdminComunidadePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Moderação da Comunidade</h1>
+      <PageHeader title="Moderação da comunidade" subtitle={`${postsWithCount.length} post(s) mais recente(s)`} />
       <AdminCommunityModerator posts={postsWithCount} />
     </div>
   )

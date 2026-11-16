@@ -9,6 +9,7 @@ import { QuestionnaireEvolutionChart } from '@/components/admin/QuestionnaireEvo
 import { AccessLinkPanel } from '@/components/admin/AccessLinkPanel'
 import { UnlockQuestionnaireButton } from '@/components/admin/UnlockQuestionnaireButton'
 import { EditPatientForm } from '@/components/admin/EditPatientForm'
+import { PageHeader } from '@/components/admin/PageHeader'
 
 export default async function PatientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -24,20 +25,18 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{p.name}</h1>
-          <p className="text-sm text-muted-foreground">{p.email ?? 'sem e-mail'}</p>
-        </div>
-        <Badge variant={p.active ? 'success' : 'secondary'}>{p.active ? 'Ativo' : 'Inativo'}</Badge>
-      </div>
+      <PageHeader
+        title={p.name}
+        subtitle={p.email ?? 'sem e-mail'}
+        action={<Badge variant={p.active ? 'success' : 'secondary'}>{p.active ? 'Ativo' : 'Inativo'}</Badge>}
+      />
 
       <div className="flex flex-wrap gap-2 items-center">
-        <Link href={`/patients/${id}/progress`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Evolução</Link>
-        <Link href={`/patients/${id}/appointments`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Consultas</Link>
-        <Link href={`/patients/${id}/financial`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Financeiro</Link>
-        <Link href={`/patients/${id}/meal-plan`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Plano alimentar</Link>
-        <Link href={`/patients/${id}/workout`} className="rounded-md border px-3 py-1 text-sm hover:bg-accent">Treino</Link>
+        <PatientTab href={`/patients/${id}/progress`}>Evolução</PatientTab>
+        <PatientTab href={`/patients/${id}/appointments`}>Consultas</PatientTab>
+        <PatientTab href={`/patients/${id}/financial`}>Financeiro</PatientTab>
+        <PatientTab href={`/patients/${id}/meal-plan`}>Plano alimentar</PatientTab>
+        <PatientTab href={`/patients/${id}/workout`}>Treino</PatientTab>
         <UnlockQuestionnaireButton patientId={id} />
       </div>
 
@@ -45,8 +44,8 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
 
       <AccessLinkPanel patientId={id} hasEmail={!!p.email} />
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card><CardHeader><CardTitle>Dados</CardTitle></CardHeader>
+      <div className="grid gap-3 md:grid-cols-2">
+        <Card className="admin-card"><CardHeader><CardTitle>Dados</CardTitle></CardHeader>
           <CardContent className="text-sm space-y-1">
             <div>Telefone: {p.phone ?? '-'}</div>
             <div>WhatsApp: {p.whatsapp_phone ?? '-'}</div>
@@ -55,14 +54,14 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
             <div>Plano: {p.plan_type} {p.plan_value ? `· ${formatBRL(Number(p.plan_value))}` : ''}</div>
             <div>Início do ciclo quinzenal: {formatDateBR(p.questionnaire_start_date) || '-'}</div>
           </CardContent></Card>
-        <Card><CardHeader><CardTitle>Objetivo & histórico</CardTitle></CardHeader>
+        <Card className="admin-card"><CardHeader><CardTitle>Objetivo & histórico</CardTitle></CardHeader>
           <CardContent className="text-sm space-y-2">
             <div><span className="text-muted-foreground">Objetivo:</span> {p.objective ?? '-'}</div>
             <div><span className="text-muted-foreground">Histórico:</span> {p.health_history ?? '-'}</div>
           </CardContent></Card>
       </div>
 
-      <Card>
+      <Card className="admin-card">
         <CardHeader><CardTitle>Evolução do questionário</CardTitle></CardHeader>
         <CardContent>
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -70,5 +69,16 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+function PatientTab({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="rounded-lg border px-3 py-1.5 text-sm hover:bg-accent hover:border-primary/30 hover:text-foreground transition-colors"
+    >
+      {children}
+    </Link>
   )
 }

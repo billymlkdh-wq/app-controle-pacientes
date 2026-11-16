@@ -2,7 +2,12 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { StatCard } from '@/components/admin/StatCard'
 import { formatBRL, formatDateBR } from '@/lib/utils'
+import {
+  Users, DollarSign, AlertCircle, CreditCard, Moon,
+  CheckCircle2, Clock, X,
+} from 'lucide-react'
 import {
   RevenueChart, PatientsChart,
   type RevenuePoint, type PatientsPoint,
@@ -25,10 +30,10 @@ function currentMonthLabel() {
 }
 
 const PANEL_TITLES: Record<string, string> = {
-  responderam:  '✅ Responderam o questionário (últimos 16 dias)',
-  nao_responderam: '⏳ Não responderam o questionário',
-  inativos:     '😴 Sem interação há 7+ dias',
-  vencimento:   '💳 Vencimento de pagamento próximo (7 dias)',
+  responderam:     'Responderam o questionário (últimos 16 dias)',
+  nao_responderam: 'Não responderam o questionário',
+  inativos:        'Sem interação há 7+ dias',
+  vencimento:      'Vencimento de pagamento próximo (7 dias)',
 }
 
 export default async function DashboardPage({
@@ -238,87 +243,123 @@ export default async function DashboardPage({
 
   // ── Panel helper ─────────────────────────────────────────────────────────
   function cardHref(key: string) { return panel === key ? '/dashboard' : `?panel=${key}` }
-  function cardClass(key: string) {
-    return `hover:bg-accent transition-colors cursor-pointer h-full block ${panel === key ? 'ring-2 ring-primary' : ''}`
-  }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
-
-      {/* ── KPIs originais ─────────────────────────────────────────────── */}
-      <div className="grid gap-4 md:grid-cols-5">
-        <Card>
-          <CardHeader><CardTitle className="text-sm text-muted-foreground">Pacientes ativos</CardTitle></CardHeader>
-          <CardContent className="text-2xl font-semibold">{patientsActiveCount.count ?? 0}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-sm text-muted-foreground">Receita do mês</CardTitle></CardHeader>
-          <CardContent className="text-2xl font-semibold">{formatBRL(revenue)}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-sm text-muted-foreground">Quest. atrasados</CardTitle></CardHeader>
-          <CardContent className="text-2xl font-semibold">{overdueSchedules.count ?? 0}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-sm text-muted-foreground">Pgtos atrasados</CardTitle></CardHeader>
-          <CardContent className="text-2xl font-semibold">{overduePayments.count ?? 0}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-sm text-muted-foreground">Inativos 7d</CardTitle></CardHeader>
-          <CardContent className="text-2xl font-semibold">{inactivePatients.length}</CardContent>
-        </Card>
+      <div className="flex items-end justify-between flex-wrap gap-2">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Visão geral da operação</p>
+        </div>
       </div>
 
-      {/* ── Insights clicáveis ──────────────────────────────────────────── */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Link href={cardHref('responderam')} className={cardClass('responderam')}>
-          <Card className="h-full">
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">✅ Responderam questionário</CardTitle></CardHeader>
-            <CardContent>
-              <span className="text-3xl font-bold text-emerald-600">{respondidasMap.size}</span>
-              <p className="text-xs text-muted-foreground mt-1">últimos 16 dias</p>
-            </CardContent>
-          </Card>
-        </Link>
+      {/* ── KPIs principais ───────────────────────────────────────────────
+          Resumo seco: só número + ícone. Clique leva aos filtros.          */}
+      <div>
+        <div className="text-[11px] uppercase tracking-widest font-semibold text-muted-foreground/70 mb-2">
+          Métricas
+        </div>
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
+          <StatCard
+            label="Pacientes ativos"
+            value={patientsActiveCount.count ?? 0}
+            icon={<Users className="h-4 w-4" />}
+            tone="primary"
+            delay={0}
+          />
+          <StatCard
+            label="Receita do mês"
+            value={formatBRL(revenue)}
+            icon={<DollarSign className="h-4 w-4" />}
+            tone="success"
+            delay={40}
+          />
+          <StatCard
+            label="Quest. atrasados"
+            value={overdueSchedules.count ?? 0}
+            icon={<AlertCircle className="h-4 w-4" />}
+            tone="warning"
+            delay={80}
+          />
+          <StatCard
+            label="Pgtos atrasados"
+            value={overduePayments.count ?? 0}
+            icon={<CreditCard className="h-4 w-4" />}
+            tone="danger"
+            delay={120}
+          />
+          <StatCard
+            label="Inativos 7d"
+            value={inactivePatients.length}
+            icon={<Moon className="h-4 w-4" />}
+            tone="muted"
+            delay={160}
+          />
+        </div>
+      </div>
 
-        <Link href={cardHref('nao_responderam')} className={cardClass('nao_responderam')}>
-          <Card className="h-full">
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">⏳ Não responderam</CardTitle></CardHeader>
-            <CardContent>
-              <span className="text-3xl font-bold text-amber-600">{pendingMap.size}</span>
-              <p className="text-xs text-muted-foreground mt-1">questionário pendente</p>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href={cardHref('inativos')} className={cardClass('inativos')}>
-          <Card className="h-full">
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">😴 Sem interação</CardTitle></CardHeader>
-            <CardContent>
-              <span className="text-3xl font-bold text-orange-600">{inactivePatients.length}</span>
-              <p className="text-xs text-muted-foreground mt-1">há 7 ou mais dias</p>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href={cardHref('vencimento')} className={cardClass('vencimento')}>
-          <Card className="h-full">
-            <CardHeader><CardTitle className="text-sm text-muted-foreground">💳 Vencimento próximo</CardTitle></CardHeader>
-            <CardContent>
-              <span className="text-3xl font-bold text-red-600">{upcomingPayments.length}</span>
-              <p className="text-xs text-muted-foreground mt-1">nos próximos 7 dias</p>
-            </CardContent>
-          </Card>
-        </Link>
+      {/* ── Ações rápidas ───────────────────────────────────────────────
+          Insights clicáveis — abrem painel abaixo.                       */}
+      <div>
+        <div className="text-[11px] uppercase tracking-widest font-semibold text-muted-foreground/70 mb-2">
+          Ações rápidas
+        </div>
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+          <StatCard
+            label="Responderam"
+            value={respondidasMap.size}
+            hint="últimos 16 dias"
+            icon={<CheckCircle2 className="h-4 w-4" />}
+            tone="success"
+            href={cardHref('responderam')}
+            active={panel === 'responderam'}
+            delay={0}
+          />
+          <StatCard
+            label="Não responderam"
+            value={pendingMap.size}
+            hint="questionário pendente"
+            icon={<Clock className="h-4 w-4" />}
+            tone="warning"
+            href={cardHref('nao_responderam')}
+            active={panel === 'nao_responderam'}
+            delay={40}
+          />
+          <StatCard
+            label="Sem interação"
+            value={inactivePatients.length}
+            hint="há 7 ou mais dias"
+            icon={<Moon className="h-4 w-4" />}
+            tone="info"
+            href={cardHref('inativos')}
+            active={panel === 'inativos'}
+            delay={80}
+          />
+          <StatCard
+            label="Vencimento próximo"
+            value={upcomingPayments.length}
+            hint="próximos 7 dias"
+            icon={<CreditCard className="h-4 w-4" />}
+            tone="danger"
+            href={cardHref('vencimento')}
+            active={panel === 'vencimento'}
+            delay={120}
+          />
+        </div>
       </div>
 
       {/* ── Painel de detalhe ───────────────────────────────────────────── */}
       {panel && PANEL_TITLES[panel] && (
-        <Card>
+        <Card className="admin-card admin-fade">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">{PANEL_TITLES[panel]}</CardTitle>
-            <Link href="/dashboard" className="text-xs text-muted-foreground hover:underline">fechar ✕</Link>
+            <Link
+              href="/dashboard"
+              aria-label="Fechar painel"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors rounded-md px-2 py-1 hover:bg-muted"
+            >
+              <X className="h-3.5 w-3.5" /> fechar
+            </Link>
           </CardHeader>
           <CardContent>
 
@@ -453,20 +494,25 @@ export default async function DashboardPage({
       )}
 
       {/* ── Gráficos ────────────────────────────────────────────────────── */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader><CardTitle className="text-base">Faturamento (12 meses)</CardTitle></CardHeader>
-          <CardContent><RevenueChart data={revenueData} /></CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-base">Pacientes (12 meses)</CardTitle></CardHeader>
-          <CardContent><PatientsChart data={patientsData} /></CardContent>
-        </Card>
+      <div>
+        <div className="text-[11px] uppercase tracking-widest font-semibold text-muted-foreground/70 mb-2">
+          Tendências 12 meses
+        </div>
+        <div className="grid gap-3 lg:grid-cols-2">
+          <Card className="admin-card admin-fade">
+            <CardHeader><CardTitle className="text-base">Faturamento</CardTitle></CardHeader>
+            <CardContent><RevenueChart data={revenueData} /></CardContent>
+          </Card>
+          <Card className="admin-card admin-fade" style={{ animationDelay: '60ms' }}>
+            <CardHeader><CardTitle className="text-base">Pacientes</CardTitle></CardHeader>
+            <CardContent><PatientsChart data={patientsData} /></CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* ── Tabelas contratos ────────────────────────────────────────────── */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+      <div className="grid gap-3 lg:grid-cols-2">
+        <Card className="admin-card">
           <CardHeader><CardTitle className="text-base">Planos por Status</CardTitle></CardHeader>
           <CardContent>
             <table className="w-full text-sm">
@@ -503,7 +549,7 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="admin-card">
           <CardHeader>
             <CardTitle className="text-base">
               Vendas por Plano{' '}
