@@ -16,6 +16,15 @@ export default async function PortalHome() {
   const { data: patient } = await supabase
     .from('patients').select('*').eq('user_id', user!.id).single()
 
+  // Anamnese: só aparece se o admin liberou e ainda não foi respondida.
+  // Se a tabela ainda não existir (migration 0027 pendente), ignora.
+  let anamnesisPending = false
+  if (patient?.id) {
+    const { data: anamnesis, error: anamnesisError } = await (createAdminClient() as any)
+      .from('patient_anamnesis').select('completed_at').eq('patient_id', patient.id).maybeSingle()
+    anamnesisPending = !anamnesisError && !!anamnesis && !anamnesis.completed_at
+  }
+
   const { data: schedule } = patient
     ? await supabase
         .from('questionnaire_schedule')
@@ -117,6 +126,20 @@ export default async function PortalHome() {
           </button>
         ) : null}
       </div>
+
+      {/* ── Anamnese liberada pelo admin ──────────────────────────────── */}
+      {anamnesisPending && (
+        <Link href="/anamnese" className="p-stat p-fade flex items-center gap-3" style={{ animationDelay: '30ms' }}>
+          <div className="w-9 h-9 rounded-lg bg-yellow-500/10 flex items-center justify-center shrink-0">
+            <ClipboardList className="h-4 w-4 text-yellow-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold text-[#f5efe0]">Anamnese liberada</div>
+            <div className="text-[11px] text-[#9a8c70]">Responde com calma, leva uns 10 minutos</div>
+          </div>
+          <ChevronRight className="h-4 w-4 text-[#fbbf24]" />
+        </Link>
+      )}
 
       {/* ── Stats bento 2x2 ────────────────────────────────────────────── */}
       {mealsTotalToday > 0 && (
