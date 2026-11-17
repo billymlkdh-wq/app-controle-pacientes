@@ -12,6 +12,14 @@ import { ChevronLeft, ChevronRight, Check, Clock, X } from 'lucide-react'
 
 type SetType = 'aquecimento' | 'preparatoria' | 'valida'
 
+// Descanso fixo entre séries válidas (2 min). Demais séries usam rest_seconds do exercício.
+const VALID_SET_REST_SECONDS = 120
+
+function restFor(ex: { rest_seconds: number | null }, set: { set_type: SetType }): number | null {
+  if (set.set_type === 'valida') return VALID_SET_REST_SECONDS
+  return ex.rest_seconds && ex.rest_seconds > 0 ? ex.rest_seconds : null
+}
+
 export type RunnerSet = {
   id: string
   set_type: SetType
@@ -143,8 +151,9 @@ export function WorkoutRunner({
       updateSetLocal(activeSet.id, { done: true })
       toast.success('Série concluída')
       // Inicia descanso
-      if (ex.rest_seconds && ex.rest_seconds > 0) {
-        setRestRemaining(ex.rest_seconds)
+      const rest = restFor(ex, activeSet)
+      if (rest) {
+        setRestRemaining(rest)
       }
       // Avança próxima série
       if (activeSetIdx + 1 < ex.sets.length) {
@@ -226,7 +235,7 @@ export function WorkoutRunner({
         })}
         <div className="text-xs text-[#d4c89a] mt-1">
           Reps <strong>{activeSet.reps}</strong>
-          {ex.rest_seconds && <> · Intervalo <strong>{Math.round(ex.rest_seconds / 60)}min</strong></>}
+          {restFor(ex, activeSet) && <> · Intervalo <strong>{Math.round(restFor(ex, activeSet)! / 60)}min</strong></>}
         </div>
         <div className="text-xs text-[#9a8c70]">
           ☐ Exercício · <strong>{doneCount}/{ex.sets.length}</strong>
