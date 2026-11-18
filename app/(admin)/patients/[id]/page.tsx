@@ -1,7 +1,7 @@
 // Perfil do paciente — dados + tabs de navegação
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatBRL, formatDateBR } from '@/lib/utils'
@@ -26,7 +26,8 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
     .order('created_at', { ascending: true })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: anamnesis } = await (supabase as any)
+  // Lê via service role (a policy de admin consulta auth.users, que o role authenticated não acessa)
+  const { data: anamnesis } = await (createAdminClient() as any)
     .from('patient_anamnesis')
     .select('answers, completed_at, released_at')
     .eq('patient_id', id)
