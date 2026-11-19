@@ -9,7 +9,12 @@ const PLAN_FIELDS = [
   'notes', 'active',
 ] as const
 
-type Patch = Partial<Record<(typeof PLAN_FIELDS)[number], unknown>>
+type Patch = Partial<Record<(typeof PLAN_FIELDS)[number] | 'energy_calc', unknown>>
+
+// Coluna ausente (migration 0028 ainda não aplicada) não deve quebrar o save do plano.
+function isMissingColumn(err: { code?: string; message?: string } | null) {
+  return !!err && (err.code === '42703' || err.code === 'PGRST204' || /energy_calc|height_cm/.test(err.message ?? ''))
+}
 
 type Snapshot = {
   plan?: Patch
@@ -75,6 +80,19 @@ export async function PATCH(
     if (Object.keys(patch).length > 0) {
       const { error } = await supabase.from('meal_plans').update(patch).eq('id', id)
       if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+
+    // Cálculo energético: grava no plano e guarda a altura no cadastro do paciente.
+    if ('energy_calc' in body.plan) {
+      const calc = body.plan.energy_calc as { height_cm?: number } | null
+      const { data: planRow, error: calcErr } = await supabase
+        .from('meal_plans').update({ energy_calc: calc }).eq('id', id).select('patient_id').single()
+      if (calcErr && !isMissingColumn(calcErr)) {
+        return NextResponse.json({ error: calcErr.message }, { status: 400 })
+      }
+      if (!calcErr && planRow?.patient_id && calc?.height_cm) {
+        await supabase.from('patients').update({ height_cm: calc.height_cm }).eq('id', planRow.patient_id)
+      }
     }
   }
 

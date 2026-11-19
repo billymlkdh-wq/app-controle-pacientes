@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { EnergyCalculator, type EnergyDraft } from '@/components/admin/EnergyCalculator'
+import { computeEnergy, isValidInput } from '@/lib/energy'
 
 type Measure = { label: string; grams: number }
 type Food = {
@@ -92,6 +94,7 @@ type Plan = {
   target_carb_g: number | null
   notes: string | null
   active: boolean
+  energy_calc: EnergyDraft | null
 }
 
 const DEFAULT_MEASURES: Measure[] = [
@@ -140,14 +143,20 @@ function scaleFromGrams(food: Food, grams: number): Partial<Item> {
 export function MealPlanEditor({
   initialPlan,
   initialMeals,
+  energyDefaults,
 }: {
   initialPlan: Plan
   initialMeals: Meal[]
+  energyDefaults?: EnergyDraft
 }) {
   const router = useRouter()
   const [plan, setPlan] = React.useState<Plan>(initialPlan)
   const [meals, setMeals] = React.useState<Meal[]>(initialMeals)
   const [saving, setSaving] = React.useState(false)
+  // Cálculo salvo no plano tem prioridade; senão pré-preenche com dados do paciente.
+  const [energy, setEnergy] = React.useState<EnergyDraft>(
+    () => initialPlan.energy_calc ?? { formula: 'mifflin', activity_factor: 1.2, adjustment_kcal: 0, ...energyDefaults },
+  )
   const [notifying, setNotifying] = React.useState(false)
 
   async function notifyPatient() {
@@ -214,6 +223,12 @@ export function MealPlanEditor({
     ))
   }
 
+  function energyPayload() {
+    const input = { ...energy, adjustment_kcal: energy.adjustment_kcal ?? 0 }
+    if (!isValidInput(input)) return null
+    return { ...input, ...computeEnergy(input), calculated_at: new Date().toISOString() }
+  }
+
   async function save() {
     setSaving(true)
     try {
@@ -231,6 +246,7 @@ export function MealPlanEditor({
             target_carb_g: plan.target_carb_g,
             notes: plan.notes,
             active: plan.active,
+            energy_calc: energyPayload(),
           },
           meals: plan.method === 'por_alimentos' ? meals : [],
         }),
@@ -302,6 +318,17 @@ export function MealPlanEditor({
           )}
         </CardContent>
       </Card>
+
+      {/* Cálculo energético ─────────────────────── */}
+      <EnergyCalculator
+        value={energy}
+        onChange={setEnergy}
+        currentTargetKcal={plan.target_kcal}
+        onApply={(kcal) => {
+          setPlan({ ...plan, target_kcal: kcal })
+          toast.success(`Meta kcal definida em ${kcal}. Salve o plano para gravar.`)
+        }}
+      />
 
       {/* Qualitativo ─────────────────────────────── */}
       {plan.method === 'qualitativo' && (

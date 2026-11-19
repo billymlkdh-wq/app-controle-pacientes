@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { MealPlanEditor } from '@/components/admin/MealPlanEditor'
+import { ageFromBirthDate } from '@/lib/energy'
 
 export default async function MealPlanEditorPage({
   params,
@@ -12,14 +13,22 @@ export default async function MealPlanEditorPage({
   const { id, planId } = await params
   const supabase = await createClient()
 
-  const [{ data: patient }, { data: plan }, { data: meals }] = await Promise.all([
-    supabase.from('patients').select('id, name').eq('id', id).single(),
+  const [{ data: patient }, { data: plan }, { data: meals }, { data: lastWeight }] = await Promise.all([
+    supabase.from('patients').select('*').eq('id', id).single(),
     supabase.from('meal_plans').select('*').eq('id', planId).single(),
     supabase
       .from('meal_plan_meals')
       .select('id, name, time_hhmm, order_num, notes, items:meal_plan_items(id, food_id, custom_description, quantity_g, household_measure, measure_label, measure_grams, measure_qty, energy_kcal, protein_g, lipid_g, carb_g, fiber_g, order_num, food:food_catalog(description, source, household_measures), substitutes:meal_plan_item_substitutes(id, food_id, custom_description, quantity_g, household_measure, measure_label, measure_grams, measure_qty, energy_kcal, protein_g, lipid_g, carb_g, fiber_g, order_num, food:food_catalog(description, source, household_measures)))')
       .eq('plan_id', planId)
       .order('order_num'),
+    supabase
+      .from('progress_records')
+      .select('weight_kg')
+      .eq('patient_id', id)
+      .not('weight_kg', 'is', null)
+      .order('date', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ])
 
   if (!patient || !plan) notFound()
@@ -93,8 +102,15 @@ export default async function MealPlanEditorPage({
           target_carb_g: plan.target_carb_g != null ? Number(plan.target_carb_g) : null,
           notes: plan.notes,
           active: plan.active,
+          energy_calc: plan.energy_calc ?? null,
         }}
         initialMeals={normalizedMeals}
+        energyDefaults={{
+          sex: patient.sex === 'M' || patient.sex === 'F' ? patient.sex : undefined,
+          age_years: ageFromBirthDate(patient.birth_date) ?? undefined,
+          weight_kg: lastWeight?.weight_kg != null ? Number(lastWeight.weight_kg) : undefined,
+          height_cm: patient.height_cm != null ? Number(patient.height_cm) : undefined,
+        }}
       />
     </div>
   )
