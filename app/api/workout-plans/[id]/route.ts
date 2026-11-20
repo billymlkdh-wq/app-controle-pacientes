@@ -17,6 +17,7 @@ type Snapshot = {
       name: string
       notes?: string | null
       rest_seconds?: number | null
+      video_url?: string | null
       order_num: number
       sets: Array<{
         set_type: 'aquecimento' | 'preparatoria' | 'valida'
@@ -73,6 +74,7 @@ export async function PATCH(
             name: ex.name,
             notes: ex.notes ?? null,
             rest_seconds: ex.rest_seconds ?? null,
+            video_url: ex.video_url?.trim() || null,
             order_num: ex.order_num,
           })
           .select().single()

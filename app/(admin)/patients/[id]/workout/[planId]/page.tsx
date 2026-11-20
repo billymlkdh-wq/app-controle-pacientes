@@ -17,7 +17,7 @@ export default async function WorkoutPlanEditorPage({
     supabase.from('workout_plans').select('*').eq('id', planId).single(),
     supabase
       .from('workout_days')
-      .select('id, name, notes, order_num, exercises:workout_exercises(id, name, notes, rest_seconds, order_num, sets:workout_sets(id, set_type, reps, target_load_kg, order_num))')
+      .select('id, name, notes, order_num, exercises:workout_exercises(id, name, notes, rest_seconds, video_url, order_num, sets:workout_sets(id, set_type, reps, target_load_kg, order_num))')
       .eq('plan_id', planId)
       .order('order_num'),
   ])
@@ -33,6 +33,7 @@ export default async function WorkoutPlanEditorPage({
       name: e.name,
       notes: e.notes,
       rest_seconds: e.rest_seconds,
+      video_url: e.video_url ?? null,
       order_num: e.order_num,
       sets: [...(e.sets ?? [])].sort((a: any, b: any) => a.order_num - b.order_num).map((s: any) => ({
         id: s.id,

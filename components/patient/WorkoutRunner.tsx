@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { ChevronLeft, ChevronRight, Check, Clock, X } from 'lucide-react'
+import { ExerciseVideoButton } from '@/components/patient/ExerciseVideoButton'
 
 type SetType = 'aquecimento' | 'preparatoria' | 'valida'
 
@@ -35,6 +36,7 @@ export type RunnerExercise = {
   name: string
   notes: string | null
   rest_seconds: number | null
+  video_url?: string | null
   sets: RunnerSet[]
 }
 
@@ -220,6 +222,11 @@ export function WorkoutRunner({
       {/* Exercise name */}
       <h1 className="text-center text-xl font-bold text-white px-2">{ex.name}</h1>
       {ex.notes && <p className="text-xs text-center text-[#9a8c70] italic -mt-2">{ex.notes}</p>}
+      {ex.video_url && (
+        <div className="flex justify-center -mt-1">
+          <ExerciseVideoButton url={ex.video_url} title={ex.name} size="md" />
+        </div>
+      )}
 
       {/* Legenda */}
       <div className="text-center text-sm space-y-0.5">

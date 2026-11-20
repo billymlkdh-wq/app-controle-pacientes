@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ChevronLeft, Play } from 'lucide-react'
+import { ExerciseVideoButton } from '@/components/patient/ExerciseVideoButton'
 
 const SET_DOT: Record<string, string> = {
   aquecimento: 'bg-red-500',
@@ -40,7 +41,7 @@ export default async function TreinoDayPage({
 
   const { data: day } = await supabase
     .from('workout_days')
-    .select('id, name, exercises:workout_exercises(id, name, notes, rest_seconds, order_num, sets:workout_sets(id, set_type, reps, target_load_kg, order_num))')
+    .select('id, name, exercises:workout_exercises(id, name, notes, rest_seconds, video_url, order_num, sets:workout_sets(id, set_type, reps, target_load_kg, order_num))')
     .eq('id', dayId)
     .single()
   if (!day) notFound()
@@ -92,9 +93,8 @@ export default async function TreinoDayPage({
             <div key={ex.id} className="border-b border-[#2a2419] pb-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1">
-                  <div className="text-base font-semibold text-white flex items-center gap-1">
+                  <div className="text-base font-semibold text-white">
                     {ex.name}
-                    <Play className="h-4 w-4 text-orange-500 fill-orange-500" />
                   </div>
                   <div className="mt-1 flex items-center gap-1 text-xs text-[#d4c89a]">
                     <span>Séries:</span>
@@ -106,6 +106,11 @@ export default async function TreinoDayPage({
                     ))}
                   </div>
                   <div className="text-xs text-[#9a8c70] mt-0.5">{repsRange(sets)}</div>
+                  {ex.video_url && (
+                    <div className="mt-2">
+                      <ExerciseVideoButton url={ex.video_url} title={ex.name} />
+                    </div>
+                  )}
                 </div>
                 {last && (
                   <div className="bg-orange-500 text-white text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">

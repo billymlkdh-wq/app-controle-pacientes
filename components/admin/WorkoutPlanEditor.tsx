@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { ExerciseVideoButton } from '@/components/patient/ExerciseVideoButton'
+import { youtubeId, youtubeThumb } from '@/lib/youtube'
 
 type SetType = 'aquecimento' | 'preparatoria' | 'valida'
 
@@ -37,6 +39,7 @@ export type ExerciseRow = {
   name: string
   notes: string | null
   rest_seconds: number | null
+  video_url: string | null
   order_num: number
   sets: SetRow[]
 }
@@ -61,7 +64,7 @@ function emptySet(order: number): SetRow {
   return { set_type: 'valida', reps: '10', target_load_kg: null, order_num: order }
 }
 function emptyExercise(order: number): ExerciseRow {
-  return { name: '', notes: null, rest_seconds: 60, order_num: order, sets: [emptySet(0)] }
+  return { name: '', notes: null, rest_seconds: 60, video_url: null, order_num: order, sets: [emptySet(0)] }
 }
 function emptyDay(order: number): DayRow {
   return { name: `Treino ${String.fromCharCode(65 + order)}`, notes: null, order_num: order, exercises: [] }
@@ -136,6 +139,9 @@ export function WorkoutPlanEditor({
     // Valida: cada exercício precisa nome
     for (const d of days) for (const e of d.exercises) {
       if (!e.name.trim()) { toast.error('Exercício sem nome'); return }
+      if (e.video_url && !youtubeId(e.video_url)) {
+        toast.error(`Link de vídeo inválido em "${e.name}". Use um link do YouTube.`); return
+      }
     }
     setSaving(true)
     try {
@@ -219,6 +225,10 @@ export function WorkoutPlanEditor({
                 <Input placeholder="Observações do exercício (opcional)"
                   value={ex.notes ?? ''}
                   onChange={(e) => updateExercise(di, ei, { notes: e.target.value || null })} />
+                <VideoField
+                  value={ex.video_url}
+                  title={ex.name || 'Exercício'}
+                  onChange={(v) => updateExercise(di, ei, { video_url: v })} />
 
                 {/* Séries */}
                 <div className="space-y-1">
@@ -268,6 +278,36 @@ export function WorkoutPlanEditor({
           {saving ? 'Salvando…' : 'Salvar treino'}
         </Button>
       </div>
+    </div>
+  )
+}
+
+// Campo do link do YouTube com miniatura e pré-visualização.
+function VideoField({
+  value, title, onChange,
+}: {
+  value: string | null
+  title: string
+  onChange: (v: string | null) => void
+}) {
+  const valid = !!youtubeId(value)
+  const thumb = youtubeThumb(value)
+  return (
+    <div className="flex gap-2 items-center flex-wrap">
+      <Input
+        className={`flex-1 min-w-[220px] ${value && !valid ? 'border-red-500' : ''}`}
+        placeholder="Link do vídeo no YouTube (opcional) · ex: https://youtu.be/…"
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value.trim() || null)} />
+      {value && !valid && <span className="text-xs text-red-400">Link do YouTube inválido</span>}
+      {valid && thumb && (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={thumb} alt="" className="h-9 w-16 rounded object-cover border" />
+          <ExerciseVideoButton url={value} title={title} />
+          <Button variant="outline" size="sm" onClick={() => onChange(null)}>Remover vídeo</Button>
+        </>
+      )}
     </div>
   )
 }

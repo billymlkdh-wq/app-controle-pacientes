@@ -21,7 +21,7 @@ export default async function TreinoExecutarPage({
 
   const { data: day } = await supabase
     .from('workout_days')
-    .select('id, name, exercises:workout_exercises(id, name, notes, rest_seconds, order_num, sets:workout_sets(id, set_type, reps, target_load_kg, order_num))')
+    .select('id, name, exercises:workout_exercises(id, name, notes, rest_seconds, video_url, order_num, sets:workout_sets(id, set_type, reps, target_load_kg, order_num))')
     .eq('id', dayId)
     .single()
   if (!day) notFound()
@@ -51,6 +51,7 @@ export default async function TreinoExecutarPage({
       name: e.name,
       notes: e.notes,
       rest_seconds: e.rest_seconds,
+      video_url: e.video_url ?? null,
       sets: [...(e.sets ?? [])].sort((a: any, b: any) => a.order_num - b.order_num).map((s: any) => {
         const log = logsBySet.get(s.id)
         return {
